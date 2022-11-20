@@ -11,7 +11,7 @@ typedef cv::Mat_<unsigned char> OpenCVGrayscaleMat;
 
 int main()
 {
-    Benchmark::benchmark();
+    //Benchmark::benchmark();
 
     std::string image_path = cv::samples::findFile("./lena_gray.bmp");    
     OpenCVGrayscaleMat img = imread(image_path, cv::IMREAD_GRAYSCALE);
@@ -27,7 +27,7 @@ int main()
 
     Histogram histogram(&img);
     histogram.computeHistogramCumule();
-    histogram.egalisationHisto(egaliseHistoImg);
+    histogram.egalisationHisto_SIMD(egaliseHistoImg);
 
     cv::namedWindow("Output");
     cv::imshow("Output", egaliseHistoImg);
