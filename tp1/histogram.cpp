@@ -24,7 +24,7 @@ void Histogram::etirementHistogramme(OpenCVGrayscaleMat& outImg, unsigned int a,
 {
     for (int i = 0; i < m_img->rows; i++)
         for (int j = 0; j < m_img->cols; j++)
-            outImg(i, j) = (b - a) * (((*m_img)(i, j) - minValue) / (double)(maxValue - minValue));
+            outImg(i, j) = (b - a) * (((*m_img)(i, j) - minValue) / (double)(maxValue - minValue)) + a;
 }
 
 void Histogram::egalisationHisto(OpenCVGrayscaleMat& outImg)

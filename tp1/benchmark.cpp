@@ -49,7 +49,7 @@ void Benchmark::benchmark()
     Histogram histogram(&img);
     histogram.computeHistogramCumule();
 
-    int iterations = 10000;
+    int iterations = 1000;
 
     {
         Timer timer("Egalisation histogramme", iterations);

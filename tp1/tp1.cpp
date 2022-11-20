@@ -23,13 +23,17 @@ int main()
         return 0;
     }
 
-    OpenCVGrayscaleMat egaliseHistoImg(img.rows, img.cols);
+    OpenCVGrayscaleMat outImg(img.rows, img.cols);
 
+
+    unsigned char min, max;
     Histogram histogram(&img);
+
+    histogram.imgMinMax(min, max);
     histogram.computeHistogramCumule();
-    histogram.egalisationHisto(egaliseHistoImg);
+    histogram.etirementHistogramme(outImg, 133, 255, min, max);
 
     cv::namedWindow("Output");
-    cv::imshow("Output", egaliseHistoImg);
+    cv::imshow("Output", outImg);
     cv::waitKey(0);
 }
