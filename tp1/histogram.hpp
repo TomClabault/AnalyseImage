@@ -24,6 +24,8 @@ public:
      */
     void imgMinMax(unsigned char& min, unsigned char& max);
 
+    unsigned int* getHistogram() { return m_histogramValues };
+
 private:
 	OpenCVGrayscaleMat* m_img;
 

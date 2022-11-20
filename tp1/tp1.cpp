@@ -13,7 +13,7 @@ int main()
 {
     Benchmark::benchmark();
 
-    std::string image_path = cv::samples::findFile("./lena_gray.bmp");    
+    std::string image_path = cv::samples::findFile("./UnequalizedHawkes.jpg");    
     OpenCVGrayscaleMat img = imread(image_path, cv::IMREAD_GRAYSCALE);
 
     if(img.empty())
@@ -25,13 +25,13 @@ int main()
 
     OpenCVGrayscaleMat outImg(img.rows, img.cols);
 
-
     unsigned char min, max;
     Histogram histogram(&img);
 
     histogram.imgMinMax(min, max);
     histogram.computeHistogramCumule();
-    histogram.etirementHistogramme(outImg, 133, 255, min, max);
+    histogram.egalisationHisto(outImg);
+    //histogram.etirementHistogramme(img, 133, 155, min, max);
 
     cv::namedWindow("Output");
     cv::imshow("Output", outImg);
