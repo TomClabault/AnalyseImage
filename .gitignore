@@ -1,0 +1,14 @@
+#Ignore les fichiers sans extension
+*
+!/**/
+!*.*
+
+.vscode
+.vs
+x64
+
+CMakeFiles
+
+*.tlog
+
+build/
