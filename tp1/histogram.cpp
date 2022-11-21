@@ -52,3 +52,27 @@ void Histogram::imgMinMax(unsigned char& min, unsigned char& max)
         }
     }
 }
+
+OpenCVScalarMat Histogram::drawHistogram(OpenCVGrayscaleMat& img) {
+    // Compute histogram
+    Histogram histogram(&img);
+    histogram.computeHistogram();
+
+    // Draw histogram
+    int hist_w = 512, hist_h = 400;
+    int bin_w = cvRound((double)hist_w / 256);
+    int valueMax = *std::max_element(histogram.getHistogram(), histogram.getHistogram() + 255);
+
+    cv::Mat_<cv::Scalar> outHist(hist_h, hist_w, cv::Scalar(0, 0, 0));
+
+    for (int i = 1; i < 256; i++) {
+        cv::line(
+            outHist,
+            cv::Point(bin_w * (i - 1), hist_h - (cvRound((int)histogram.getHistogram()[i - 1]) * hist_h) / valueMax),
+            cv::Point(bin_w * (i), hist_h - (cvRound((int)histogram.getHistogram()[i]) * hist_h) / valueMax),
+            cv::Scalar(255, 255, 255), 2, 8, 0
+        );
+    }
+
+    return outHist;
+}
