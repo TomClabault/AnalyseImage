@@ -1,8 +1,11 @@
+#include <algorithm>
 #include <opencv2/core.hpp>
 #include <opencv2/imgcodecs.hpp>
 #include <opencv2/highgui.hpp>
+#include "opencv2/imgproc.hpp"
 
 typedef cv::Mat_<unsigned char> OpenCVGrayscaleMat;
+typedef cv::Mat_<cv::Scalar> OpenCVScalarMat;
 
 class Histogram
 {
@@ -24,7 +27,9 @@ public:
      */
     void imgMinMax(unsigned char& min, unsigned char& max);
 
-    unsigned int* getHistogram() { return m_histogramValues };
+    unsigned int* getHistogram() { return m_histogramValues; };
+
+    static OpenCVScalarMat drawHistogram(OpenCVGrayscaleMat& img);
 
 private:
 	OpenCVGrayscaleMat* m_img;

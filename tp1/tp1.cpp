@@ -23,17 +23,31 @@ int main()
         return 0;
     }
 
-    OpenCVGrayscaleMat outImg(img.rows, img.cols);
 
     unsigned char min, max;
     Histogram histogram(&img);
 
     histogram.imgMinMax(min, max);
     histogram.computeHistogramCumule();
-    histogram.egalisationHisto(outImg);
-    //histogram.etirementHistogramme(img, 133, 155, min, max);
 
-    cv::namedWindow("Output");
-    cv::imshow("Output", outImg);
+    OpenCVGrayscaleMat outImgEgalisation(img.rows, img.cols);
+    histogram.egalisationHisto(outImgEgalisation);
+
+    OpenCVGrayscaleMat outImgEtirement(img.rows, img.cols);
+    histogram.etirementHistogramme(outImgEtirement, 133, 255, min, max);
+
+
+    OpenCVScalarMat histOriginal = Histogram::drawHistogram(img);
+    cv::imshow("Original histogram", histOriginal);
+    cv::imshow("Original image", img);
+
+    OpenCVScalarMat histEgalisation = Histogram::drawHistogram(outImgEgalisation);
+    cv::imshow("Egalisation histogram", histEgalisation);
+    cv::imshow("Egalisation image", outImgEgalisation);
+
+    OpenCVScalarMat histEtirement = Histogram::drawHistogram(outImgEtirement);
+    cv::imshow("Etirement histogram", histEtirement);
+    cv::imshow("Etirement image", outImgEtirement);
+
     cv::waitKey(0);
 }
