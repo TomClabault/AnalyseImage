@@ -19,7 +19,18 @@ public:
     void computeHistogramCumule();
     
     void etirementHistogramme(OpenCVGrayscaleMat& outImg, unsigned int a, unsigned int b, unsigned char minValue, unsigned char maxValue);
+
+    /**
+    * Utile pour ne travailler que sur une sous partie de l'image
+    */
+    void etirementHistogramme(OpenCVGrayscaleMat& outImg, unsigned int rows, unsigned int cols, unsigned int a, unsigned int b, unsigned char minValue, unsigned char maxValue);
+
     void egalisationHisto(OpenCVGrayscaleMat& outImg);
+
+    /**
+    * Utile pour ne travailler que sur une sous partie de l'image
+    */
+    void egalisationHisto(OpenCVGrayscaleMat& outImg, unsigned int rows, unsigned int cols);
 
     /**
      * Calcule la valeur d'intensité lumineuse minimale et maximale de l'image
@@ -31,6 +42,7 @@ public:
     void imgMinMax(unsigned char& min, unsigned char& max);
 
     unsigned int* getHistogram() { return m_histogramValues; };
+    unsigned int* getHistogramCumule() { return m_histogramCumuleValues; }
 
     static OpenCVScalarMat drawHistogram(OpenCVGrayscaleMat& img);
 
@@ -43,4 +55,4 @@ private:
 
 __global__ void etirementHistogramme(unsigned char* imgData_devicePtr, unsigned int rows, unsigned int cols, unsigned char* outImg_devicePtr,
                                      unsigned int a, unsigned int b, unsigned char minValue, unsigned char maxValue);
-__global__ void egalisationHisto(unsigned char* imgData_devicePtr, unsigned char* outImg_devicePtr);
+__global__ void egalisationHisto(unsigned char* imgData_devicePtr, unsigned int rows, unsigned int cols, unsigned char* outImg_devicePtr, unsigned int* histogramCumule);

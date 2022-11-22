@@ -27,6 +27,13 @@ void HistogramCPU::etirementHistogramme(OpenCVGrayscaleMat& outImg, unsigned int
             outImg(i, j) = (b - a) * (((*m_img)(i, j) - minValue) / (double)(maxValue - minValue)) + a;
 }
 
+void HistogramCPU::etirementHistogramme(OpenCVGrayscaleMat& outImg, unsigned int rows, unsigned int cols, unsigned int a, unsigned int b, unsigned char minValue, unsigned char maxValue)
+{
+    for (int i = 0; i < rows; i++)
+        for (int j = 0; j < cols; j++)
+            outImg(i, j) = (b - a) * (((*m_img)(i, j) - minValue) / (double)(maxValue - minValue)) + a;
+}
+
 void HistogramCPU::egalisationHisto(OpenCVGrayscaleMat& outImg)
 {
     double a = (std::pow(2, 8) - 1);
@@ -34,6 +41,15 @@ void HistogramCPU::egalisationHisto(OpenCVGrayscaleMat& outImg)
     for (int i = 0; i < m_img->rows; i++)
         for (int j = 0; j < m_img->cols; j++)
             outImg(i, j) = a * ((m_histogramCumuleValues[(*m_img)(i, j)]) / (double)(m_img->rows * m_img->cols));
+}
+
+void HistogramCPU::egalisationHisto(OpenCVGrayscaleMat& outImg, unsigned int rows, unsigned int cols)
+{
+    double a = (std::pow(2, 8) - 1);
+
+    for (int i = 0; i < rows; i++)
+        for (int j = 0; j < cols; j++)
+            outImg(i, j) = a * ((m_histogramCumuleValues[(*m_img)(i, j)]) / (double)(rows * cols));
 }
 
 void HistogramCPU::imgMinMax(unsigned char& min, unsigned char& max)

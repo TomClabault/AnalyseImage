@@ -1,5 +1,7 @@
 ﻿#include <chrono>
 #include <iostream>
+#include <fstream>
+
 #include <opencv2/core.hpp>
 #include <opencv2/imgcodecs.hpp>
 #include <opencv2/highgui.hpp>
@@ -11,8 +13,40 @@ typedef cv::Mat_<unsigned char> OpenCVGrayscaleMat;
 
 int main()
 {
-    Benchmark::CPU_benchmark();
-    Benchmark::GPU_benchmark();
+    /*Benchmark::CPU_benchmark();
+    Benchmark::GPU_benchmark();*/
+
+    std::ifstream inputEtirementCPU("outputEtirementCPU.data");
+    std::ifstream inputEtirementGPU("outputEtirementGPU.data");
+
+    std::ifstream inputEgalisationCPU("outputEgalisationCPU.data");
+    std::ifstream inputEgalisationGPU("outputEgalisationGPU.data");
+
+    std::ofstream outputEtirementRatio("outputEtirementRatio.data");
+    std::ofstream outputEgalisationRatio("outputEgalisationRatio.data");
+
+    while (!inputEtirementCPU.eof())
+    {
+        double MPX, timeCPUEtirement, timeGPUEtirement, timeCPUEgalisation, timeGPUEgalisation;
+
+        inputEtirementCPU >> MPX;
+        inputEtirementCPU >> timeCPUEtirement;
+        inputEtirementGPU >> MPX;
+        inputEtirementGPU >> timeGPUEtirement;
+
+        inputEgalisationCPU >> MPX;
+        inputEgalisationCPU >> timeCPUEgalisation;
+        inputEgalisationGPU >> MPX;
+        inputEgalisationGPU >> timeGPUEgalisation;
+
+        outputEtirementRatio << MPX << " " << timeCPUEtirement / timeGPUEtirement << std::endl;
+        outputEgalisationRatio << MPX << " " << timeCPUEgalisation / timeGPUEgalisation << std::endl;
+    }
+
+    outputEtirementRatio.close();
+    outputEgalisationRatio.close();
+
+    std::exit(0);
 
     /*std::string image_path = cv::samples::findFile("./UnequalizedHawkes.jpg");
     OpenCVGrayscaleMat img = imread(image_path, cv::IMREAD_GRAYSCALE);
