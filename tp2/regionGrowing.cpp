@@ -110,16 +110,24 @@ void RegionGrowing::segmentationDifference(unsigned int treshold) {
 
     unsigned int index = 0;
     for (const std::pair<unsigned int, unsigned int>& initial_seed_position : m_seeds_positions) {
+        unsigned int x = initial_seed_position.first;
+        unsigned int y = initial_seed_position.second;
+
         Seed seed {
-                    initial_seed_position.first,
-                    initial_seed_position.second,
-                    index++
+                    x,
+                    y,
+                    (*m_image)(y, x)
                 };
 
         active_seeds.push_back(seed);
     }
 
-    for (const Seed& seed : active_seeds) {
+    int num = 0;
+    //On va faire grandir les régions tant qu'il y a des 
+    while (!active_seeds.empty()) {
+        Seed seed = active_seeds.front();
+        active_seeds.pop_front();
+
         unsigned int x = seed.position_x;
         unsigned int y = seed.position_y;
 
@@ -131,8 +139,65 @@ void RegionGrowing::segmentationDifference(unsigned int treshold) {
         left = (x >= 1) ? (*m_image)(y, x - 1) : -1;
         right = (x < m_image->cols - 1) ? (*m_image)(y, x + 1) : -1;
 
-        std::cout << "seed position: " << x << ", " << y << std::endl;
-        std::cout << "top, left, bottom, right: " << top << ", " << left << ", " << bottom << ", " << right << std::endl;
+        unsigned int parent_value = seed.parent_value;
+        if(top != -1 && std::abs((int)(top - parent_value)) <= treshold) {
+            std::cout << "top" << std::endl;
+            m_region_matrix[y - 1][x] = m_region_matrix[y][x];
+
+            Seed new_seed {
+                x, 
+                y - 1,
+                m_region_matrix[y][x]
+            };
+            active_seeds.push_back(seed);
+        }
+
+        if(bottom != -1 && std::abs((int)(bottom - parent_value)) <= treshold) {
+            std::cout << "bottom" << std::endl;
+            m_region_matrix[y + 1][x] = m_region_matrix[y][x];
+            
+            Seed new_seed {
+                x, 
+                y + 1,
+                m_region_matrix[y][x]
+            };
+            active_seeds.push_back(seed);
+        }
+
+        std::cout << "right: " << right << "\n";
+        std::cout << "left: " << left << "\n";
+        std::cout << "parent: " << parent_value << "\n";
+        if(right != -1 && std::abs((int)(right - parent_value)) <= treshold) {
+            std::cout << "right" << std::endl;
+            m_region_matrix[y][x + 1] = m_region_matrix[y][x];
+            
+            Seed new_seed {
+                x + 1, 
+                y,
+                m_region_matrix[y][x]
+            };
+            active_seeds.push_back(seed);
+        }
+
+        if(left != -1 && std::abs((int)(left - parent_value)) <= treshold) {
+            std::cout << "left" << std::endl;
+            m_region_matrix[y][x - 1] = m_region_matrix[y][x];
+            
+            Seed new_seed {
+                x - 1, 
+                y,
+                m_region_matrix[y][x]
+            };
+            active_seeds.push_back(seed);
+        }
+
+
+        if(num == 6) {
+            printRegionMatrix();
+            return;
+        }
+
+        num++;
     }
 }
 
@@ -143,7 +208,7 @@ void RegionGrowing::regionFusion() {
 void randomRGBColor(int rgb[])
 {
     for(int i = 0; i < 3; i++) {
-        rgb[i] = rand()%256;
+        rgb[i] = rand() % 256;
     }
 }
 

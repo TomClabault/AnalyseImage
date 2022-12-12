@@ -53,6 +53,8 @@ public:
     void regionFusion();
 
     void printRegionMatrix();
+    
+    void showSegmentation();
 
 private:
     bool m_seeds_placed;
