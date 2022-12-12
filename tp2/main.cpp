@@ -1,4 +1,4 @@
-#include <algorithm>
+#include <iostream>
 #include <opencv2/core.hpp>
 #include <opencv2/imgcodecs.hpp>
 #include <opencv2/highgui.hpp>
@@ -6,12 +6,10 @@
 
 #include "regionGrowing.hpp"
 
-typedef cv::Mat_<unsigned char> OpenCVGrayscaleMat;
-
 int main() {
     std::string inputImagePath;
 
-    OpenOpenCVGrayscaleMat inputImage = imread(inputImagePath);
+    OpenCVGrayscaleMat inputImage = cv::imread(inputImagePath);
 
     if(inputImage.empty()) {
         std::cout << "Impossible d'ouvrir l'image\n";
@@ -19,7 +17,7 @@ int main() {
         return 0;
     }
     
-    RegionGrowing regionGrowing(inputImage);
+    RegionGrowing regionGrowing(&inputImage);
 
     std::cout << "hello";
 }

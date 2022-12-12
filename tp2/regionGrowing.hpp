@@ -8,7 +8,7 @@ typedef cv::Mat_<unsigned char> OpenCVGrayscaleMat;
 
 class RegionGrowing {
 public:
-    RegionGrowing(const OpenCVGrayscaleMat& image) : m_image(image) {};
+    RegionGrowing(OpenCVGrayscaleMat* image);
 
     /**
      * Positionne les germes qui seront utilisés pour le region growing.
@@ -27,7 +27,7 @@ public:
 private:
     bool m_seedsPlaced;
 
-    OpenCVGrayscaleMat& m_image;
+    OpenCVGrayscaleMat* m_image;
 
     unsigned int** region_matrix;
-}
+};

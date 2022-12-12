@@ -14,14 +14,14 @@ set(CMAKE_CXX_FLAGS_RELEASE "-O3")
 include_directories(inc)
 
 set(SRCS
-    tp1.cpp
-	histogram.cpp
+	main.cpp
+	regionGrowing.cpp
 )
 
 
 find_package( OpenCV REQUIRED )
 include_directories( ${OpenCV_INCLUDE_DIRS} )
 
-add_executable(tp1 ${SRCS})
+add_executable(main ${SRCS})
 
-target_link_libraries(tp1 ${OpenCV_LIBS} )
+target_link_libraries(main ${OpenCV_LIBS} )
