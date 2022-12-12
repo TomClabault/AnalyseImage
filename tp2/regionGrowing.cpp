@@ -159,7 +159,7 @@ void RegionGrowing::showSegmentation() {
 
     for (int i = 0; i < regions_img.rows; i++) {
         for (int j = 0; j < regions_img.cols; j++) {
-            int val = m_image->at<uchar>(i, j);
+            int val = m_region_matrix[i][j];
             if (val < (int)distinct_colors.size()) {
                 regions_img.at<cv::Vec3b>(i, j)[0] = distinct_colors[val][0];
                 regions_img.at<cv::Vec3b>(i, j)[1] = distinct_colors[val][1];
