@@ -56,6 +56,12 @@ public:
      */
     void normalizeAdjacency();
 
+    /**
+     * Retourne true si la région de valeur 'regionAValue' est adjacente à la région de valeur 
+     * 'regionBValue'
+     */
+    bool isRegionAdjacent(int regionAValue, int regionBValue);
+
     void regionFusion();
 
     void printRegionMatrix();

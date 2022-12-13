@@ -48,6 +48,7 @@ void RegionGrowing::placeSeedsManual(std::vector<std::pair<unsigned int, unsigne
     m_seeds_placed = true;
     m_seeds_positions.reserve(positionsList.size());
     m_regions_adjacency.resize(positionsList.size());
+    m_nb_regions = nb_seeds;
 
     unsigned int index = 0;
 
@@ -62,6 +63,7 @@ void RegionGrowing::placeSeedsRandom(const unsigned int nb_seeds) {
     m_seeds_placed = true;
     m_seeds_positions.reserve(nb_seeds);
     m_regions_adjacency.resize(nb_seeds);
+    m_nb_regions = nb_seeds;
 
     //Génération d'une seed pour les prng qui vont être utilisés après
     unsigned int randomSeed = std::chrono::system_clock::now().time_since_epoch().count();
@@ -182,6 +184,10 @@ void RegionGrowing::normalizeAdjacency() {
             m_regions_adjacency[neighborRegion].insert(regionIndex);
         }
     }
+}
+
+bool RegionGrowing::isRegionAdjacent(int regionAValue, int regionBValue) {
+    return m_regions_adjacency[regionAValue].contains(regionBValue);
 }
 
 void RegionGrowing::regionFusion() {
