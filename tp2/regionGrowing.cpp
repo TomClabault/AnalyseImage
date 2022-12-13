@@ -111,11 +111,7 @@ void RegionGrowing::segmentationDifference(unsigned int treshold) {
         unsigned int x = initial_seed_position.first;
         unsigned int y = initial_seed_position.second;
 
-        Seed seed {
-            x, 
-            y,
-            (*m_image)(y, x)
-        };
+        Seed seed(x, y, (*m_image)(y, x));
 
         active_seeds.push_back(seed);
     }
@@ -128,67 +124,42 @@ void RegionGrowing::segmentationDifference(unsigned int treshold) {
         unsigned int x = seed.position_x;
         unsigned int y = seed.position_y;
 
-        //Valeurs des pixels au dessus, à gauche, à droite ou en dessous du germe
-        int top, left, bottom, right;
-
-        top = (y >= 1) ? (*m_image)(y - 1, x) : -1;
-        bottom = (y < m_image->rows - 1) ? (*m_image)(y + 1, x) : -1;
-        left = (x >= 1) ? (*m_image)(y, x - 1) : -1;
-        right = (x < m_image->cols - 1) ? (*m_image)(y, x + 1) : -1;
-
+        //Valeur du pixel de référence
         unsigned int value = (*m_image)(seed.position_y, seed.position_x);
-        if (top != -1 && //On a bien un pixel au dessus
-            std::abs((int)(top - value)) <= treshold && //Le pixel satisfait le critère de resssemblance
-            m_region_matrix[y - 1][x] == -1) { //Le pixel n'a pas déjà été pris par un germe
 
-            Seed new_seed {
-                x, 
-                y - 1,
-                m_region_matrix[y][x]
-            };
+        //Valeurs des pixels au dessus, à gauche, à droite ou en dessous du germe
+        int neighborPixels[4] = {
+            (y >= 1) ? (*m_image)(y - 1, x) : -1,
+            (x >= 1) ? (*m_image)(y, x - 1) : -1,
+            (y < m_image->rows - 1) ? (*m_image)(y + 1, x) : -1,
+            (x < m_image->cols - 1) ? (*m_image)(y, x + 1) : -1
+        };
 
-            active_seeds.push_back(new_seed);
-            m_region_matrix[y - 1][x] = m_region_matrix[y][x];
-        }
+        //Offsets utilisés pour factoriser le code
+        //Ces offsets correspondent aux décalages que l'on doit appliquer
+        //au pixel de référence pour obtenir, dans l'ordre:
+        //top, left, bottom, right
+        int xOffsets[4] = { 0, -1, 0, 1 };
+        int yOffsets[4] = { -1, 0, 1, 0 };
 
-        if (bottom != -1 && 
-            std::abs((int)(bottom - value)) <= treshold &&
-            m_region_matrix[y + 1][x] == -1) {
+        for (int offset = 0; offset < 4; offset++) {
+            int neighborValue = neighborPixels[offset];
 
-            Seed new_seed {
-                x, 
-                y + 1,
-                m_region_matrix[y][x]
-            };
+            int xOffset = xOffsets[offset];
+            int yOffset = yOffsets[offset];
 
-            active_seeds.push_back(new_seed);
-            m_region_matrix[y + 1][x] = m_region_matrix[y][x];
-        }
+            int xNeighbor = x + xOffset;
+            int yNeighbor = y + yOffset;
 
-        if (right != -1 && 
-            std::abs((int)(right - value)) <= treshold &&
-            m_region_matrix[y][x + 1] == -1) {
-            Seed new_seed {
-                x + 1, 
-                y,
-                m_region_matrix[y][x]
-            };
+            if (neighborValue != -1 && //On a bien un pixel au dessus
+                std::abs((int)(neighborValue - value)) <= treshold && //Le pixel satisfait le critère de resssemblance
+                m_region_matrix[yNeighbor][xNeighbor] == -1) { //Le pixel n'a pas déjà été pris par un germe
 
-            active_seeds.push_back(new_seed);
-            m_region_matrix[y][x + 1] = m_region_matrix[y][x];
-        }
+                Seed new_seed(xNeighbor, yNeighbor, m_region_matrix[y][x]);
 
-        if (left != -1 && 
-            std::abs((int)(left - value)) <= treshold &&
-            m_region_matrix[y][x - 1] == -1) {
-            Seed new_seed {
-                x - 1, 
-                y,
-                m_region_matrix[y][x]
-            };
-
-            active_seeds.push_back(new_seed);
-            m_region_matrix[y][x - 1] = m_region_matrix[y][x];
+                active_seeds.push_back(new_seed);
+                m_region_matrix[yNeighbor][xNeighbor] = m_region_matrix[y][x];
+            }
         }
     }
 }

@@ -9,6 +9,8 @@ typedef cv::Mat_<unsigned char> OpenCVGrayscaleMat;
 class RegionGrowing {
 public:
     struct Seed {
+        Seed(unsigned int x, unsigned int y, int val) : position_x(x), position_y(y), value(val) {}
+
         unsigned int position_x;
         unsigned int position_y;
 
@@ -34,7 +36,7 @@ public:
      * 
      * @param nb_seeds Le nombre de germe qui sera placé dans l'image
      */
-    void placeSeedsRandom(unsigned int nb_seeds);
+    void placeSeedsRandom(unsigned int nb_seeds_per_row);
 
     /**
      * Lance la segmentation de l'image (grossissement des germes).
@@ -59,8 +61,4 @@ private:
 
     //Stocke les positions des germes initiaux
     std::vector<std::pair<unsigned int, unsigned int>> m_seeds_positions;
-
-    //Stocke les valeurs des germes (permet de savoir à quel région tel ou tel)
-    //germe appartient
-    std::vector<unsigned int> seeds_values;
 };
