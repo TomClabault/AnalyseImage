@@ -10,7 +10,7 @@
 #define TEST_IMAGE_WIDTH 8
 
 int main() {
-    std::string inputImagePath = "lena_gray.bmp";
+    std::string inputImagePath = "simpleImageGrayscale.png";
 
     OpenCVGrayscaleMat inputImage = cv::imread(inputImagePath, cv::IMREAD_GRAYSCALE);
 
@@ -31,13 +31,15 @@ int main() {
         std::cout << std::endl;
     }
 
-    RegionGrowing regionGrowing(&testImage);
+    RegionGrowing regionGrowing(&inputImage);
 
-    std::vector<std::pair<unsigned int, unsigned int>> positions;
-    positions.push_back(std::pair<unsigned int, unsigned int>(0, 0));
-    positions.push_back(std::pair<unsigned int, unsigned int>(2, 2));
-    positions.push_back(std::pair<unsigned int, unsigned int>(7, 7));
+    std::vector<std::pair<unsigned int, unsigned int>> positionsSimpleImageGrayscale;
+    positionsSimpleImageGrayscale.push_back(std::pair<unsigned int, unsigned int>(26, 53));
+    positionsSimpleImageGrayscale.push_back(std::pair<unsigned int, unsigned int>(83, 43));
+    positionsSimpleImageGrayscale.push_back(std::pair<unsigned int, unsigned int>(100, 93));
+    positionsSimpleImageGrayscale.push_back(std::pair<unsigned int, unsigned int>(43, 134));
 
-    regionGrowing.placeSeedsManual(positions);
+    regionGrowing.placeSeedsManual(positionsSimpleImageGrayscale);
     regionGrowing.segmentationDifference(5);
+    regionGrowing.showSegmentation();
 }

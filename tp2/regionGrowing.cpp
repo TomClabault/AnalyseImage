@@ -55,8 +55,6 @@ void RegionGrowing::placeSeedsManual(std::vector<std::pair<unsigned int, unsigne
 
         m_seeds_positions.push_back(position);
     }
-
-    printRegionMatrix();
 }
 
 void RegionGrowing::placeSeedsRandom(unsigned int nb_seeds) {
@@ -114,15 +112,14 @@ void RegionGrowing::segmentationDifference(unsigned int treshold) {
         unsigned int y = initial_seed_position.second;
 
         Seed seed {
-                    x,
-                    y,
-                    (*m_image)(y, x)
-                };
+            x, 
+            y,
+            (*m_image)(y, x)
+        };
 
         active_seeds.push_back(seed);
     }
 
-    int num = 0;
     //On va faire grandir les régions tant qu'il y a des 
     while (!active_seeds.empty()) {
         Seed seed = active_seeds.front();
@@ -139,65 +136,60 @@ void RegionGrowing::segmentationDifference(unsigned int treshold) {
         left = (x >= 1) ? (*m_image)(y, x - 1) : -1;
         right = (x < m_image->cols - 1) ? (*m_image)(y, x + 1) : -1;
 
-        unsigned int parent_value = seed.parent_value;
-        if(top != -1 && std::abs((int)(top - parent_value)) <= treshold) {
-            std::cout << "top" << std::endl;
-            m_region_matrix[y - 1][x] = m_region_matrix[y][x];
+        unsigned int value = (*m_image)(seed.position_y, seed.position_x);
+        if (top != -1 && //On a bien un pixel au dessus
+            std::abs((int)(top - value)) <= treshold && //Le pixel satisfait le critère de resssemblance
+            m_region_matrix[y - 1][x] == -1) { //Le pixel n'a pas déjà été pris par un germe
 
             Seed new_seed {
                 x, 
                 y - 1,
                 m_region_matrix[y][x]
             };
-            active_seeds.push_back(seed);
+
+            active_seeds.push_back(new_seed);
+            m_region_matrix[y - 1][x] = m_region_matrix[y][x];
         }
 
-        if(bottom != -1 && std::abs((int)(bottom - parent_value)) <= treshold) {
-            std::cout << "bottom" << std::endl;
-            m_region_matrix[y + 1][x] = m_region_matrix[y][x];
-            
+        if (bottom != -1 && 
+            std::abs((int)(bottom - value)) <= treshold &&
+            m_region_matrix[y + 1][x] == -1) {
+
             Seed new_seed {
                 x, 
                 y + 1,
                 m_region_matrix[y][x]
             };
-            active_seeds.push_back(seed);
+
+            active_seeds.push_back(new_seed);
+            m_region_matrix[y + 1][x] = m_region_matrix[y][x];
         }
 
-        std::cout << "right: " << right << "\n";
-        std::cout << "left: " << left << "\n";
-        std::cout << "parent: " << parent_value << "\n";
-        if(right != -1 && std::abs((int)(right - parent_value)) <= treshold) {
-            std::cout << "right" << std::endl;
-            m_region_matrix[y][x + 1] = m_region_matrix[y][x];
-            
+        if (right != -1 && 
+            std::abs((int)(right - value)) <= treshold &&
+            m_region_matrix[y][x + 1] == -1) {
             Seed new_seed {
                 x + 1, 
                 y,
                 m_region_matrix[y][x]
             };
-            active_seeds.push_back(seed);
+
+            active_seeds.push_back(new_seed);
+            m_region_matrix[y][x + 1] = m_region_matrix[y][x];
         }
 
-        if(left != -1 && std::abs((int)(left - parent_value)) <= treshold) {
-            std::cout << "left" << std::endl;
-            m_region_matrix[y][x - 1] = m_region_matrix[y][x];
-            
+        if (left != -1 && 
+            std::abs((int)(left - value)) <= treshold &&
+            m_region_matrix[y][x - 1] == -1) {
             Seed new_seed {
                 x - 1, 
                 y,
                 m_region_matrix[y][x]
             };
-            active_seeds.push_back(seed);
+
+            active_seeds.push_back(new_seed);
+            m_region_matrix[y][x - 1] = m_region_matrix[y][x];
         }
-
-
-        if(num == 6) {
-            printRegionMatrix();
-            return;
-        }
-
-        num++;
     }
 }
 
@@ -221,16 +213,19 @@ void RegionGrowing::showSegmentation() {
     };
     cv::Mat regions_img = cv::Mat::zeros(m_image->rows, m_image->cols, CV_8UC3);
 
-
     for (int i = 0; i < regions_img.rows; i++) {
         for (int j = 0; j < regions_img.cols; j++) {
             int val = m_region_matrix[i][j];
-            if (val < (int)distinct_colors.size()) {
+            if (val == -1) {//Partie de l'image qui n'a pas été "capturée" par les germes 
+                //Couleur noire
+                regions_img.at<cv::Vec3b>(i, j)[0] = 0;
+                regions_img.at<cv::Vec3b>(i, j)[1] = 0;
+                regions_img.at<cv::Vec3b>(i, j)[2] = 0;
+            } else if (val < (int)distinct_colors.size()) {
                 regions_img.at<cv::Vec3b>(i, j)[0] = distinct_colors[val][0];
                 regions_img.at<cv::Vec3b>(i, j)[1] = distinct_colors[val][1];
                 regions_img.at<cv::Vec3b>(i, j)[2] = distinct_colors[val][2];
-            }
-            else {
+            }  else {
                 int rgb[3];
                 randomRGBColor(rgb);
                 distinct_colors.push_back({rgb[0], rgb[1], rgb[2]});
@@ -242,6 +237,7 @@ void RegionGrowing::showSegmentation() {
     }
 
     cv::imshow("Segmentation image", regions_img);
+    cv::waitKey(0);
 }
 
 void RegionGrowing::printRegionMatrix() {
