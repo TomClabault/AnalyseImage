@@ -1,4 +1,5 @@
 #include <algorithm>
+#include <unordered_set>
 #include <opencv2/core.hpp>
 #include <opencv2/imgcodecs.hpp>
 #include <opencv2/highgui.hpp>
@@ -36,7 +37,7 @@ public:
      * 
      * @param nb_seeds Le nombre de germe qui sera placé dans l'image
      */
-    void placeSeedsRandom(unsigned int nb_seeds_per_row);
+    void placeSeedsRandom(const unsigned int nb_seeds_per_row);
 
     /**
      * Lance la segmentation de l'image (grossissement des germes).
@@ -45,11 +46,21 @@ public:
      * Si la différence de valeur entre les deux pixels est inférieure ou égale
      * au treshold, le pixel sera pris en compte
      */
-    void segmentationDifference(unsigned int treshold);
+    void segmentationDifference(const unsigned int treshold);
+
+    /**
+     * S'assure que les listes d'adjacence de deux régions adjacentes se contiennent bien l'une
+     * l'autre. Dû à la façon dont les adjacences sont construites pendant l'étalement des germes,
+     * il se peut qu'une région A soit adjacente a une région B (en se fiant à m_regions_adjacency)
+     * mais que B ne soit pas adjacente à A (en se fiant toujours à m_regions_adjacency).
+     */
+    void normalizeAdjacency();
+
     void regionFusion();
 
     void printRegionMatrix();
-    
+    void printRegionsAdjacency();
+
     void showSegmentation();
 
 private:
@@ -61,4 +72,13 @@ private:
 
     //Stocke les positions des germes initiaux
     std::vector<std::pair<unsigned int, unsigned int>> m_seeds_positions;
+
+    //Une liste de N ensembles. N est le nombre de germes posé au départ de l'algorithme.
+    //L'ensemble d'index 'i' contient les valeurs des germes des régions qui sont adjacents à la région 'i'
+    // 
+    //Par exemple, m_region_adjacency[0] contient les valeurs des régions adjacentes à la région
+    //de valeur 0
+    //Ainsi si m_regions_adjacency[0] = { 1, 2, 3 }, cela signifie que tous les germes de valeurs 1, 2 ou 3
+    //dans la m_region_matrix forment des régions (les régions 1, 2 et 3) qui sont adjacentes à la région 0
+    std::vector<std::unordered_set<int>> m_regions_adjacency;
 };

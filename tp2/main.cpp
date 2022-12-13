@@ -23,7 +23,8 @@ int main() {
     OpenCVGrayscaleMat testImage(TEST_IMAGE_WIDTH, TEST_IMAGE_HEIGHT);
     for(int i = 0; i < TEST_IMAGE_HEIGHT; i++) {
         for(int j = 0; j < TEST_IMAGE_WIDTH; j++) {
-            testImage(i, j) = i * TEST_IMAGE_WIDTH + j + 1;
+            //testImage(i, j) = i * TEST_IMAGE_WIDTH + j + 1;
+            testImage(i, j) = 0;
 
             std::cout << (unsigned int)testImage(i, j) << ", ";
         }
@@ -34,10 +35,16 @@ int main() {
     RegionGrowing regionGrowing(&inputImage);
 
     std::vector<std::pair<unsigned int, unsigned int>> positionsSimpleImageGrayscale;
-    positionsSimpleImageGrayscale.push_back(std::pair<unsigned int, unsigned int>(26, 53));
-    positionsSimpleImageGrayscale.push_back(std::pair<unsigned int, unsigned int>(83, 43));
-    positionsSimpleImageGrayscale.push_back(std::pair<unsigned int, unsigned int>(100, 93));
-    positionsSimpleImageGrayscale.push_back(std::pair<unsigned int, unsigned int>(43, 134));
+    positionsSimpleImageGrayscale.push_back(std::pair<unsigned int, unsigned int>(59, 74));
+    positionsSimpleImageGrayscale.push_back(std::pair<unsigned int, unsigned int>(115, 69));
+    positionsSimpleImageGrayscale.push_back(std::pair<unsigned int, unsigned int>(125, 138));
+    positionsSimpleImageGrayscale.push_back(std::pair<unsigned int, unsigned int>(112, 218));
+    positionsSimpleImageGrayscale.push_back(std::pair<unsigned int, unsigned int>(35, 168));
+
+    std::vector<std::pair<unsigned int, unsigned int>> positionsTestImage;
+    positionsTestImage.push_back(std::pair<unsigned int, unsigned int>(0, 0));
+    positionsTestImage.push_back(std::pair<unsigned int, unsigned int>(1, 0));
+    positionsTestImage.push_back(std::pair<unsigned int, unsigned int>(7, 7));
 
     regionGrowing.placeSeedsManual(positionsSimpleImageGrayscale);
     regionGrowing.segmentationDifference(5);
