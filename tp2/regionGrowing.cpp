@@ -48,7 +48,7 @@ void RegionGrowing::placeSeedsManual(std::vector<std::pair<unsigned int, unsigne
     m_seeds_placed = true;
     m_seeds_positions.reserve(positionsList.size());
     m_regions_adjacency.resize(positionsList.size());
-    m_nb_regions = nb_seeds;
+    m_nb_regions = positionsList.size();
 
     unsigned int index = 0;
 
@@ -187,7 +187,7 @@ void RegionGrowing::normalizeAdjacency() {
 }
 
 bool RegionGrowing::isRegionAdjacent(int regionAValue, int regionBValue) {
-    return m_regions_adjacency[regionAValue].contains(regionBValue);
+    return m_regions_adjacency[regionAValue].find(regionBValue) != m_regions_adjacency[regionAValue].end();
 }
 
 void RegionGrowing::regionFusion() {

@@ -75,6 +75,7 @@ private:
     OpenCVGrayscaleMat* m_image;
 
     int** m_region_matrix;
+    int m_nb_regions; //Nombre de régions / germes placés
 
     //Stocke les positions des germes initiaux
     std::vector<std::pair<unsigned int, unsigned int>> m_seeds_positions;
