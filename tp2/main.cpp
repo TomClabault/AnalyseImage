@@ -6,8 +6,8 @@
 
 #include "regionGrowing.hpp"
 
-#define TEST_IMAGE_HEIGHT 8
-#define TEST_IMAGE_WIDTH 8
+#define TEST_IMAGE_WIDTH 10
+#define TEST_IMAGE_HEIGHT 9
 
 int main() {
     std::string inputImagePath = "simpleImageGrayscale.png";
@@ -20,19 +20,16 @@ int main() {
         return 0;
     }
 
-    OpenCVGrayscaleMat testImage(TEST_IMAGE_WIDTH, TEST_IMAGE_HEIGHT);
+    OpenCVGrayscaleMat testImage(TEST_IMAGE_HEIGHT, TEST_IMAGE_WIDTH);
     for(int i = 0; i < TEST_IMAGE_HEIGHT; i++) {
         for(int j = 0; j < TEST_IMAGE_WIDTH; j++) {
-            //testImage(i, j) = i * TEST_IMAGE_WIDTH + j + 1;
             testImage(i, j) = 0;
-
-            std::cout << (unsigned int)testImage(i, j) << ", ";
         }
 
         std::cout << std::endl;
     }
 
-    RegionGrowing regionGrowing(&inputImage);
+    RegionGrowing regionGrowing(&testImage);
 
     std::vector<std::pair<unsigned int, unsigned int>> positionsSimpleImageGrayscale;
     positionsSimpleImageGrayscale.push_back(std::pair<unsigned int, unsigned int>(59, 74));
@@ -46,7 +43,8 @@ int main() {
     positionsTestImage.push_back(std::pair<unsigned int, unsigned int>(1, 0));
     positionsTestImage.push_back(std::pair<unsigned int, unsigned int>(7, 7));
 
-    regionGrowing.placeSeedsManual(positionsSimpleImageGrayscale);
+    //regionGrowing.placeSeedsManual(positionsSimpleImageGrayscale);
+    regionGrowing.placeSeedsRandom(9);
     regionGrowing.segmentationDifference(5);
     regionGrowing.showSegmentation();
 }

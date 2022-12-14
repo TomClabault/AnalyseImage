@@ -72,8 +72,36 @@ void RegionGrowing::placeSeedsRandom(const unsigned int nb_seeds) {
     //On va diviser l'image en nbCellsPerRow * nbCellsPerRow 'regions' qui
     //vont accueillir les germes
     unsigned int nbCellsPerRow = (unsigned int)std::ceil(std::sqrt(nb_seeds));
-    unsigned int cellHeight = m_image->rows / (double)nbCellsPerRow;
-    unsigned int cellWidth = m_image->cols / (double)nbCellsPerRow;
+
+    //Ces tableaux vont contenir les largeurs et les hauteurs des cellules disponibles
+    //On a besoin de tableaux comme ça et non pas juste deux variables cellWidth et cellHeight
+    //car les cellules peuvent ne psa être toutes de la même taille dans le cas ou
+    //la taille de l'image n'est pas divisible par nbCellsPerRow
+    unsigned int* cellWidths = new unsigned int[nbCellsPerRow];
+    unsigned int* cellHeights = new unsigned int[nbCellsPerRow];
+
+    //On commence par remplir grossièrement le tableau et on ajustera après
+    //pour tenir compte des tailles de cellules différentes
+    unsigned int baseCellHeight = m_image->rows / nbCellsPerRow;
+    unsigned int baseCellWidth = m_image->cols / nbCellsPerRow;
+    for (int i = 0; i < nbCellsPerRow; i++) {
+        cellWidths[i] = baseCellWidth;
+        cellHeights[i] = baseCellHeight;
+    }
+
+    //On va élargir de 1 pixel toutes les cellules qui en ont besoin pour arriver à la taille de l'image
+    //si jamais on avait jusque là des pixels qui n'étaient pas pris en compte
+    //(les pixels tout à droite de l'image si on parle de la largeur)
+    const unsigned int widthRemainder = m_image->cols % cellWidths[0];
+    for (int i = 0; i < widthRemainder; i++) {
+        cellWidths[i]++;
+    }
+
+    //Même chose pour la hauteur
+    const unsigned int heightRemainder = m_image->rows % cellHeights[0];
+    for (int i = 0; i < heightRemainder; i++) {
+        cellHeights[i]++;
+    }
 
     std::vector<unsigned int> randomCellIndexes;
     randomCellIndexes.reserve(nbCellsPerRow * nbCellsPerRow);
@@ -82,14 +110,13 @@ void RegionGrowing::placeSeedsRandom(const unsigned int nb_seeds) {
 
     std::shuffle(randomCellIndexes.begin(), randomCellIndexes.end(), std::default_random_engine(randomSeed));
 
-    //Affichage du vecteur des index random
-    //for (unsigned int i = 0; i < nbCellsPerRow * nbCellsPerRow; i++)
-        //std::cout << randomCellIndexes.at(i) << "\n";
-
     for (unsigned int i = 0; i < nb_seeds; i++) {
         unsigned int randomCellIndex = randomCellIndexes.at(i);
 
         //TODO (Tom) remplacer le rand par un générateur plus rapide car std::rand = slow
+        unsigned int cellWidth = cellWidths[randomCellIndex % nbCellsPerRow];
+        unsigned int cellHeight = cellHeights[randomCellIndex / nbCellsPerRow];
+
         unsigned int randomX = std::rand() % cellWidth + (randomCellIndex % nbCellsPerRow) * cellWidth;
         unsigned int randomY = std::rand() % cellHeight + (randomCellIndex / nbCellsPerRow) * cellHeight;
 
@@ -100,6 +127,9 @@ void RegionGrowing::placeSeedsRandom(const unsigned int nb_seeds) {
 
         m_seeds_positions.push_back(std::pair<unsigned int, unsigned int>(randomX, randomY));
     }
+
+    delete[] cellWidths;
+    delete[] cellHeights;
 }
 
 void RegionGrowing::segmentationDifference(const unsigned int treshold) {
