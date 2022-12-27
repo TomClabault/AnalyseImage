@@ -62,20 +62,30 @@ public:
      */
     bool isRegionAdjacent(int regionAValue, int regionBValue);
 
-    void regionFusion();
+    void regionFusion(const unsigned int treshold);
 
     void printRegionMatrix();
     void printRegionsAdjacency();
 
-    void showSegmentation();
+    void showSegmentation(std::string windowName, bool showInitialsSeeds);
+    void showSeeds(cv::Mat* image);
 
 private:
     bool m_seeds_placed;
+    bool m_regions_placed;
 
     OpenCVGrayscaleMat* m_image;
 
     int** m_region_matrix;
     int m_nb_regions; //Nombre de régions / germes placés
+
+    // Stocke les couleurs associées aux régions
+    std::vector<std::vector<int>> distinct_colors = {
+        { 255, 179, 0 }, { 128, 62, 117 },
+        { 255, 104, 0 }, { 166, 189, 215 },
+        { 193, 0, 32 }, { 206, 162, 98 },
+        { 129, 112, 102 }
+    };
 
     //Stocke les positions des germes initiaux
     std::vector<std::pair<unsigned int, unsigned int>> m_seeds_positions;

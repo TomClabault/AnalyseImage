@@ -150,7 +150,7 @@ void RegionGrowing::segmentationDifference(const unsigned int treshold) {
         active_seeds.push_back(seed);
     }
 
-    //On va faire grandir les régions tant qu'il y a des 
+    //On va faire grandir les régions tant qu'il y a des seeds
     while (!active_seeds.empty()) {
         Seed seed = active_seeds.front();
         active_seeds.pop_front();
@@ -187,7 +187,7 @@ void RegionGrowing::segmentationDifference(const unsigned int treshold) {
             int neighborSeedValue = neighborPixelValue == -1 ? -1 : m_region_matrix[yNeighbor][xNeighbor];
 
             if (neighborPixelValue != -1 && //On a bien un pixel au dessus
-                std::abs((int)(neighborPixelValue - value)) <= treshold) {//Le pixel satisfait le critère de resssemblance
+                std::abs((int)(neighborPixelValue - value)) <= treshold) {//Le pixel satisfait le critère de ressemblance
 
                 if (neighborSeedValue == -1) { //Le pixel voisin n'a pas encore été visité par un germe
                     Seed new_seed(xNeighbor, yNeighbor, m_region_matrix[y][x]);
@@ -206,6 +206,7 @@ void RegionGrowing::segmentationDifference(const unsigned int treshold) {
     }
 
     normalizeAdjacency();
+    m_regions_placed = true;
 }
 
 void RegionGrowing::normalizeAdjacency() {
@@ -220,8 +221,84 @@ bool RegionGrowing::isRegionAdjacent(int regionAValue, int regionBValue) {
     return m_regions_adjacency[regionAValue].find(regionBValue) != m_regions_adjacency[regionAValue].end();
 }
 
-void RegionGrowing::regionFusion() {
+void RegionGrowing::regionFusion(const unsigned int treshold) {
+    // On vérifie bien que les regions sont placées avant de commencer
+    if (!m_regions_placed) {
+        return;
+    }
 
+    std::deque<int> active_regions_idx;
+
+    // On ajoute toutes les régions à la file
+    for (int regionIndex = 0; regionIndex < m_regions_adjacency.size(); regionIndex++) {
+        active_regions_idx.push_back(regionIndex);
+    }
+
+    // On va fusionner les régions tant qu'il y a des régions dans la file
+    while (!active_regions_idx.empty()) {
+        int regionIdx = active_regions_idx.front();
+        active_regions_idx.pop_front();
+        
+        unsigned int x = m_seeds_positions[regionIdx].first;
+        unsigned int y = m_seeds_positions[regionIdx].second;
+
+        //Valeur du pixel de la région
+        unsigned int value = (*m_image)(y, x);
+
+        auto it = m_regions_adjacency[regionIdx].begin();
+        bool hasBeenMerged = false;
+        while (!hasBeenMerged && it != m_regions_adjacency[regionIdx].end()) {
+            int neighborRegionIdx = *it;
+
+            int neighborX = m_seeds_positions[neighborRegionIdx].first;
+            int neighborY = m_seeds_positions[neighborRegionIdx].second;
+
+            unsigned int neighborValue = (*m_image)(neighborY, neighborX);
+
+            if (std::abs((int)(neighborValue - value)) <= treshold) {
+                // On fusionne les régions dans la liste d'adjacence
+                m_regions_adjacency[regionIdx].insert(m_regions_adjacency[neighborRegionIdx].begin(), m_regions_adjacency[neighborRegionIdx].end());
+                m_regions_adjacency[regionIdx].erase(neighborRegionIdx);
+                m_regions_adjacency[regionIdx].erase(regionIdx);
+
+                // On fusionne les régions dans la matrice
+                for (int y = 0; y < m_image->rows; y++) {
+                    for (int x = 0; x < m_image->cols; x++) {
+                        if (m_region_matrix[y][x] == neighborRegionIdx) {
+                            m_region_matrix[y][x] = regionIdx;
+                        }
+                    }
+                }
+
+                // On "supprime" la région fusionnée dans la liste d'adjacence en changeant ses voisins par -1
+                m_regions_adjacency[neighborRegionIdx].clear();
+                m_regions_adjacency[neighborRegionIdx].insert(-1);
+
+                // On ajoute la "nouvelle" région à la file
+                active_regions_idx.push_back(regionIdx);
+
+                // On supprime la région fusionnée de la file
+                active_regions_idx.erase(
+                    std::remove(active_regions_idx.begin(), active_regions_idx.end(), neighborRegionIdx),
+                    active_regions_idx.end()
+                );
+
+                // On remplace la région fusionnée par la nouvelle région dans chaque liste d'adjacence
+                for (int regionIndex = 0; regionIndex < m_regions_adjacency.size(); regionIndex++) {
+                    // Si la région d'adjacence n'a pas été supprimé (-1)
+                    // et que la région d'adjacence contient la région à supprimer
+                    if (m_regions_adjacency[regionIndex].find(-1) == m_regions_adjacency[regionIndex].end()
+                        && m_regions_adjacency[regionIndex].find(neighborRegionIdx) != m_regions_adjacency[regionIndex].end()) {
+                        m_regions_adjacency[regionIndex].erase(neighborRegionIdx);
+                        m_regions_adjacency[regionIndex].insert(regionIdx);
+                    }
+                }
+                
+                hasBeenMerged = true;
+            }
+            it++;
+        }
+    }
 }
 
 void randomRGBColor(int rgb[])
@@ -231,17 +308,12 @@ void randomRGBColor(int rgb[])
     }
 }
 
-void RegionGrowing::showSegmentation() {
-    std::vector<std::vector<int>> distinct_colors = {
-        { 255, 179, 0 }, { 128, 62, 117 },
-        { 255, 104, 0 }, { 166, 189, 215 },
-        { 193, 0, 32 }, { 206, 162, 98 },
-        { 129, 112, 102 }
-    };
+void RegionGrowing::showSegmentation(std::string windowName, bool showInitialsSeeds) {
     cv::Mat regions_img = cv::Mat::zeros(m_image->rows, m_image->cols, CV_8UC3);
 
     printRegionsAdjacency();
 
+    // Parcourt la matrice des régions et colorie l'image en concéquence
     for (int i = 0; i < regions_img.rows; i++) {
         for (int j = 0; j < regions_img.cols; j++) {
             int val = m_region_matrix[i][j];
@@ -254,7 +326,7 @@ void RegionGrowing::showSegmentation() {
                 regions_img.at<cv::Vec3b>(i, j)[0] = distinct_colors[val][2];
                 regions_img.at<cv::Vec3b>(i, j)[1] = distinct_colors[val][1];
                 regions_img.at<cv::Vec3b>(i, j)[2] = distinct_colors[val][0];
-            }  else {
+            } else {
                 int rgb[3];
                 randomRGBColor(rgb);
                 distinct_colors.push_back({rgb[0], rgb[1], rgb[2]});
@@ -265,15 +337,49 @@ void RegionGrowing::showSegmentation() {
         }
     }
 
-    cv::imshow("Segmentation image", regions_img);
-    cv::waitKey(0);
+    // Affiche les seeds initiaux sous forme de cercle
+    if (showInitialsSeeds) {
+        showSeeds(&regions_img);
+    }
+
+    cv::imshow(windowName, regions_img);
+}
+
+void RegionGrowing::showSeeds(cv::Mat* image) {
+    if (!m_seeds_placed || !m_regions_placed) {
+        return;
+    }
+
+    int index = 0;
+    for (std::pair<unsigned int, unsigned int> m_seed_position : m_seeds_positions) {
+        // Affiche le texte si la région n'a pas été supprimée (Fusion)
+        if (m_regions_adjacency[index].find(-1) == m_regions_adjacency[index].end()) {
+            cv::Point center(m_seed_position.first, m_seed_position.second);
+            cv::Scalar color(0, 0, 0);
+            int radius = 5;
+            int thicknessCircle = 2;
+
+            cv::circle(*image, center, radius, color, -1);
+
+            std::string text = std::to_string(index);
+            int fontFace = cv::FONT_HERSHEY_SIMPLEX;
+            double fontScale = 0.6;
+            double thicknessText = 2;
+            cv::putText(*image, text, center, fontFace, fontScale, color, thicknessText);
+        }
+        index++;
+    }
 }
 
 void RegionGrowing::printRegionMatrix() {
     for(int i = 0; i < m_image->rows; i++) {
         std::cout << "[";
         for(int j = 0; j < m_image->cols; j++) {
-            std::cout << m_region_matrix[i][j] << ", ";
+            int val = m_region_matrix[i][j];
+            if (val == -1)
+                std::cout << "-, ";
+            else
+                std::cout << val << ", ";
         }
         std::cout << "]\n";
     }
@@ -284,7 +390,10 @@ void RegionGrowing::printRegionsAdjacency() {
     for (auto start = m_regions_adjacency.begin(), end = m_regions_adjacency.end(); start != end; start++) {
         std::cout << "Voisins de la region " << index++ << ": ";
         for (auto startNeighbors = (*start).begin(), endNeighbors = (*start).end(); startNeighbors != endNeighbors; startNeighbors++) {
-            std::cout << *startNeighbors << ", ";
+            if (*startNeighbors == -1)
+                std::cout << "This region was deleted";
+            else
+                std::cout << *startNeighbors << ", ";
         }
 
         std::cout << std::endl;

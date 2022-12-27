@@ -29,7 +29,7 @@ int main() {
         std::cout << std::endl;
     }
 
-    RegionGrowing regionGrowing(&testImage);
+    RegionGrowing regionGrowing(&inputImage);
 
     std::vector<std::pair<unsigned int, unsigned int>> positionsSimpleImageGrayscale;
     positionsSimpleImageGrayscale.push_back(std::pair<unsigned int, unsigned int>(59, 74));
@@ -46,5 +46,8 @@ int main() {
     //regionGrowing.placeSeedsManual(positionsSimpleImageGrayscale);
     regionGrowing.placeSeedsRandom(9);
     regionGrowing.segmentationDifference(5);
-    regionGrowing.showSegmentation();
+    regionGrowing.showSegmentation("Segmentation before fusion", true);
+    regionGrowing.regionFusion(10);
+    regionGrowing.showSegmentation("Segmentation after fusion", true);
+    cv::waitKey(0);
 }
