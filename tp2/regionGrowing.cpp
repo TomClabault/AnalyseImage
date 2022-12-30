@@ -301,6 +301,49 @@ void RegionGrowing::regionFusion(const unsigned int treshold) {
     }
 }
 
+void RegionGrowing::removeNoise(const unsigned int nbPixels) {
+    // On vérifie bien que les regions sont placées avant de commencer
+    if (!m_regions_placed) {
+        return;
+    }
+
+    // On compte les pixels de chaque zones de la matrice en parcourant la matrice des régions
+    std::vector<unsigned int> regions_pixels_count(m_regions_adjacency.size(), 0);
+    
+    for (int y = 0; y < m_image->rows; y++) {
+        for (int x = 0; x < m_image->cols; x++) {
+            int regionIdx = m_region_matrix[y][x];
+            if (regionIdx != -1)
+                regions_pixels_count[regionIdx]++;
+        }
+    }
+
+    // Print regions_pixels_count
+    for (int i = 0; i < regions_pixels_count.size(); i++) {
+        std::cout << "Region " << i << " : " << regions_pixels_count[i] << " pixels" << std::endl;
+    }
+
+    // On remplace la région par un de ses voisins dans la matrice des régions
+    for (int regionIdx = 0; regionIdx < regions_pixels_count.size(); regionIdx++) {
+        if (regions_pixels_count[regionIdx] < nbPixels) {
+            // On remplace la région par un de ses voisins dans la matrice des régions
+            int newRegion = *m_regions_adjacency[regionIdx].begin();
+
+            for (int y = 0; y < m_image->rows; y++) {
+                for (int x = 0; x < m_image->cols; x++) {
+                    if (m_region_matrix[y][x] == regionIdx) {
+                        m_region_matrix[y][x] = newRegion;
+                    }
+                }
+            }
+
+            // On supprime la région dans la liste d'adjacence
+            m_regions_adjacency[regionIdx].clear();
+            m_regions_adjacency[regionIdx].insert(-1);
+        }
+    }
+}
+
 void randomRGBColor(int rgb[])
 {
     for(int i = 0; i < 3; i++) {

@@ -49,5 +49,7 @@ int main() {
     regionGrowing.showSegmentation("Segmentation before fusion", true);
     regionGrowing.regionFusion(10);
     regionGrowing.showSegmentation("Segmentation after fusion", true);
+    regionGrowing.removeNoise(100);
+    regionGrowing.showSegmentation("Segmentation after noise removal", true);
     cv::waitKey(0);
 }

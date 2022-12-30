@@ -63,6 +63,7 @@ public:
     bool isRegionAdjacent(int regionAValue, int regionBValue);
 
     void regionFusion(const unsigned int treshold);
+    void removeNoise(const unsigned int nbPixels);
 
     void printRegionMatrix();
     void printRegionsAdjacency();
