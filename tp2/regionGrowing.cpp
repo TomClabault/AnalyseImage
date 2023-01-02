@@ -206,7 +206,7 @@ void RegionGrowing::segmentationDifference(const unsigned int treshold) {
     }
 
     normalizeAdjacency();
-    m_regions_placed = true;
+    m_regions_computed = true;
 }
 
 void RegionGrowing::normalizeAdjacency() {
@@ -221,9 +221,29 @@ bool RegionGrowing::isRegionAdjacent(int regionAValue, int regionBValue) {
     return m_regions_adjacency[regionAValue].find(regionBValue) != m_regions_adjacency[regionAValue].end();
 }
 
+bool RegionGrowing::is_pixel_on_border(int pixel_value, unsigned int y_pixel, unsigned int x_pixel) {
+    //Si le pixel est en bordure de l'image elle même
+    if (y_pixel == 0 || y_pixel == m_image->rows - 1 || x_pixel == 0 || x_pixel == m_image->cols - 1) {
+        return true;
+    }
+
+    //Pixel au dessus
+    if (y_pixel > 0 && m_region_matrix[y_pixel - 1][x_pixel] != pixel_value) {
+        return true;
+    } else if (y_pixel < m_image->rows - 1 && m_region_matrix[y_pixel + 1][x_pixel] != pixel_value) {//Pixel en dessous
+        return true;
+    } else if (x_pixel > 0 && m_region_matrix[y_pixel][x_pixel - 1] != pixel_value) {//Pixel à gauche
+        return true;
+    } else if (x_pixel < m_image->cols - 1 && m_region_matrix[y_pixel][x_pixel + 1] != pixel_value) {//Pixel à droite
+        return true;
+    }
+
+    return false;
+}
+
 void RegionGrowing::regionFusion(const unsigned int treshold) {
     // On vérifie bien que les regions sont placées avant de commencer
-    if (!m_regions_placed) {
+    if (!m_regions_computed) {
         return;
     }
 
@@ -303,7 +323,7 @@ void RegionGrowing::regionFusion(const unsigned int treshold) {
 
 void RegionGrowing::removeNoise(const unsigned int nbPixels) {
     // On vérifie bien que les regions sont placées avant de commencer
-    if (!m_regions_placed) {
+    if (!m_regions_computed) {
         return;
     }
 
@@ -351,10 +371,8 @@ void randomRGBColor(int rgb[])
     }
 }
 
-void RegionGrowing::showSegmentation(std::string windowName, bool showInitialsSeeds) {
+void RegionGrowing::showSegmentation(std::string window_name, bool show_initials_seeds) {
     cv::Mat regions_img = cv::Mat::zeros(m_image->rows, m_image->cols, CV_8UC3);
-
-    printRegionsAdjacency();
 
     // Parcourt la matrice des régions et colorie l'image en concéquence
     for (int i = 0; i < regions_img.rows; i++) {
@@ -381,15 +399,15 @@ void RegionGrowing::showSegmentation(std::string windowName, bool showInitialsSe
     }
 
     // Affiche les seeds initiaux sous forme de cercle
-    if (showInitialsSeeds) {
+    if (show_initials_seeds) {
         showSeeds(&regions_img);
     }
 
-    cv::imshow(windowName, regions_img);
+    cv::imshow(window_name, regions_img);
 }
 
-void RegionGrowing::showSeeds(cv::Mat* image) {
-    if (!m_seeds_placed || !m_regions_placed) {
+void RegionGrowing::showSeeds(cv::Mat* image, cv::Scalar color) {
+    if (!m_seeds_placed || !m_regions_computed) {
         return;
     }
 
@@ -398,7 +416,7 @@ void RegionGrowing::showSeeds(cv::Mat* image) {
         // Affiche le texte si la région n'a pas été supprimée (Fusion)
         if (m_regions_adjacency[index].find(-1) == m_regions_adjacency[index].end()) {
             cv::Point center(m_seed_position.first, m_seed_position.second);
-            cv::Scalar color(0, 0, 0);
+
             int radius = 5;
             int thicknessCircle = 2;
 
@@ -412,6 +430,53 @@ void RegionGrowing::showSeeds(cv::Mat* image) {
         }
         index++;
     }
+}
+
+void RegionGrowing::showRegionBorders(std::string window_name, bool show_initial_seeds) {
+    cv::Mat borders_img = cv::Mat::zeros(m_image->rows, m_image->cols, CV_8UC3);
+
+    //On va parcourir chaque pixel de l'image segmetnée et regarder les voisins de ce pixel
+    //si un des voisins du pixel n'a pas la même valeur que lui, cela veut dire que le pixel
+    //est en bordure de sa région et on va donc le colorer d'une certaine couleur dans l'image
+    //qui montrera les bordures de région
+    for (int i = 0; i < m_image->rows; i++) {
+        for (int j = 0; j < m_image->cols; j++) {
+            int pixel_value = m_region_matrix[i][j];
+
+            if (pixel_value == -1) {//Partie de l'image qui n'a pas été "capturée" par les germes
+                //on skip ce pixel parce qu'il ne correspond à aucune région et on ne va pas calculer
+                //la bordure d'une région qui n'existe pas
+
+                continue;
+            } else {
+                //On regarde les voisins du pixel pour savoir si on est en bordure de la région
+                bool is_on_border = is_pixel_on_border(pixel_value, i, j);
+
+                if (is_on_border) {
+                    if (pixel_value < (int)distinct_colors.size()) {
+                        borders_img.at<cv::Vec3b>(i, j)[0] = distinct_colors[pixel_value][2];
+                        borders_img.at<cv::Vec3b>(i, j)[1] = distinct_colors[pixel_value][1];
+                        borders_img.at<cv::Vec3b>(i, j)[2] = distinct_colors[pixel_value][0];
+                    } else {
+                        int rgb[3];
+                        randomRGBColor(rgb);
+                        distinct_colors.push_back({ rgb[0], rgb[1], rgb[2] });
+
+                        borders_img.at<cv::Vec3b>(i, j)[0] = rgb[0];
+                        borders_img.at<cv::Vec3b>(i, j)[1] = rgb[1];
+                        borders_img.at<cv::Vec3b>(i, j)[2] = rgb[2];
+                    }
+                }
+            }
+        }
+    }
+
+    // Affiche les seeds initiaux sous forme de cercle
+    if (show_initial_seeds) {
+        showSeeds(&borders_img, cv::Scalar(255, 255, 255));
+    }
+
+    cv::imshow(window_name, borders_img);
 }
 
 void RegionGrowing::printRegionMatrix() {

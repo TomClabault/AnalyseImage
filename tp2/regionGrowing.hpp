@@ -62,18 +62,36 @@ public:
      */
     bool isRegionAdjacent(int regionAValue, int regionBValue);
 
+    /**
+     * Teste si un pixel donné est en bordure de sa région ou non (en connexité 4). 
+     * L'image doit avoir préalalement été segmentée avant d'appeler cette fonction
+     * @param pixel_value La valeur du pixel à tester
+     * @param y_pixel La position y du pixel à tester
+     * @param x_pixel La position x du pixel à tester
+     */
+    bool is_pixel_on_border(int pixel_value, unsigned int y_pixel, unsigned int x_pixel);
+
     void regionFusion(const unsigned int treshold);
     void removeNoise(const unsigned int nbPixels);
 
     void printRegionMatrix();
     void printRegionsAdjacency();
 
-    void showSegmentation(std::string windowName, bool showInitialsSeeds);
-    void showSeeds(cv::Mat* image);
+    /**
+    * Calcule et affiche une image qui montre les frontières des régions préalablement calculées.
+    */
+    void showRegionBorders(std::string window_name, bool show_initial_seeds);
+    void showSegmentation(std::string window_name, bool show_initials_seeds);
+
+    /**
+     * Rajoute du texte sur l'image donnée qui montre là où étaient les seeds
+     * qui ont segmenté l'image. Le texte sera de la couleur donnée
+     */
+    void showSeeds(cv::Mat* image, cv::Scalar color = cv::Scalar(0, 0, 0));
 
 private:
     bool m_seeds_placed;
-    bool m_regions_placed;
+    bool m_regions_computed;
 
     OpenCVGrayscaleMat* m_image;
 
