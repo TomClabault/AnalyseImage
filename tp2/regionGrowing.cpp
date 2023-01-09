@@ -46,7 +46,7 @@ RegionGrowing::~RegionGrowing() {
 
 void RegionGrowing::placeSeedsManual(std::vector<std::pair<unsigned int, unsigned int>> positionsList) {
     m_seeds_placed = true;
-    m_seeds_positions.reserve(positionsList.size());
+    m_seeds_positions.resize(positionsList.size());
     m_regions_adjacency.resize(positionsList.size());
     m_nb_regions = positionsList.size();
 
@@ -61,7 +61,7 @@ void RegionGrowing::placeSeedsManual(std::vector<std::pair<unsigned int, unsigne
 
 void RegionGrowing::placeSeedsRandom(const unsigned int nb_seeds) {
     m_seeds_placed = true;
-    m_seeds_positions.reserve(nb_seeds);
+    m_seeds_positions.resize(nb_seeds);
     m_regions_adjacency.resize(nb_seeds);
     m_nb_regions = nb_seeds;
 
