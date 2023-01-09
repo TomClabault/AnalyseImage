@@ -32,20 +32,22 @@ int main() {
     RegionGrowing regionGrowing(&inputImage);
 
     std::vector<std::pair<unsigned int, unsigned int>> positionsSimpleImageGrayscale;
-    positionsSimpleImageGrayscale.push_back(std::pair<unsigned int, unsigned int>(386, 344));
-    /*positionsSimpleImageGrayscale.push_back(std::pair<unsigned int, unsigned int>(115, 69));
-    positionsSimpleImageGrayscale.push_back(std::pair<unsigned int, unsigned int>(125, 138));
-    positionsSimpleImageGrayscale.push_back(std::pair<unsigned int, unsigned int>(112, 218));
-    positionsSimpleImageGrayscale.push_back(std::pair<unsigned int, unsigned int>(35, 168));*/
+    positionsSimpleImageGrayscale.push_back(std::pair<unsigned int, unsigned int>(383, 143));
+    positionsSimpleImageGrayscale.push_back(std::pair<unsigned int, unsigned int>(118, 426));
+    positionsSimpleImageGrayscale.push_back(std::pair<unsigned int, unsigned int>(322, 272));
+    positionsSimpleImageGrayscale.push_back(std::pair<unsigned int, unsigned int>(474, 145));
+    positionsSimpleImageGrayscale.push_back(std::pair<unsigned int, unsigned int>(152, 172));
+    positionsSimpleImageGrayscale.push_back(std::pair<unsigned int, unsigned int>(106, 368));
+    positionsSimpleImageGrayscale.push_back(std::pair<unsigned int, unsigned int>(272, 455));
+    positionsSimpleImageGrayscale.push_back(std::pair<unsigned int, unsigned int>(209, 343));
+    positionsSimpleImageGrayscale.push_back(std::pair<unsigned int, unsigned int>(329, 19));
+    positionsSimpleImageGrayscale.push_back(std::pair<unsigned int, unsigned int>(450, 314));
+    positionsSimpleImageGrayscale.push_back(std::pair<unsigned int, unsigned int>(181, 77));
+    positionsSimpleImageGrayscale.push_back(std::pair<unsigned int, unsigned int>(96, 71));
 
-    std::vector<std::pair<unsigned int, unsigned int>> positionsTestImage;
-    positionsTestImage.push_back(std::pair<unsigned int, unsigned int>(0, 0));
-    positionsTestImage.push_back(std::pair<unsigned int, unsigned int>(1, 0));
-    positionsTestImage.push_back(std::pair<unsigned int, unsigned int>(7, 7));
-
-    //regionGrowing.blur(9, 1);
-    //regionGrowing.placeSeedsManual(positionsSimpleImageGrayscale);
-    regionGrowing.placeSeedsRandom(12);
+    //regionGrowing.blur(7, 1);
+    regionGrowing.placeSeedsManual(positionsSimpleImageGrayscale);
+    //regionGrowing.placeSeedsRandom(12);
     regionGrowing.segmentationDifference(5);
     regionGrowing.showSegmentation("Segmentation before fusion", true);
     regionGrowing.regionFusion(10);

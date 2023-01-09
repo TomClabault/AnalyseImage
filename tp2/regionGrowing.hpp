@@ -73,6 +73,7 @@ public:
      */
     bool isRegionAdjacent(int regionAValue, int regionBValue);
 
+
     /**
      * Teste si un pixel donné est en bordure de sa région ou non (en connexité 4). 
      * L'image doit avoir préalalement été segmentée avant d'appeler cette fonction
@@ -86,6 +87,7 @@ public:
     void removeNoise(const unsigned int nbPixels);
 
     void printRegionMatrix();
+    void printRegionMatrixToFile(const std::string filename);
     void printRegionsAdjacency();
 
     /**

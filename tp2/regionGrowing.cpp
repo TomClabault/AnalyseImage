@@ -12,6 +12,7 @@
 #include <cmath>
 #include <ctime>
 #include <deque>
+#include <fstream>
 #include <iostream>
 #include <random> //std::default_random_engine
 
@@ -125,9 +126,10 @@ void RegionGrowing::placeSeedsRandom(const unsigned int nb_seeds) {
         m_seeds_positions.push_back(std::pair<unsigned int, unsigned int>(randomX, randomY));
     }
 
-    for (int i = 0; i < m_seeds_positions.size(); i++) {
+    //Affichage des positions des seeds
+    /*for (int i = 0; i < m_seeds_positions.size(); i++) {
         std::cout << "seed " << i << ": " << m_seeds_positions.at(i).first << ", " << m_seeds_positions.at(i).second << std::endl;
-    }
+    }*/
 
     delete[] cellWidths;
     delete[] cellHeights;
@@ -354,7 +356,7 @@ void RegionGrowing::regionFusion(const unsigned int treshold) {
             int neighborX = m_seeds_positions[neighborRegionIdx].first;
             int neighborY = m_seeds_positions[neighborRegionIdx].second;
 
-            unsigned int neighborValue = (*m_image)(neighborY, neighborX);
+            unsigned char neighborValue = (*m_image)(neighborY, neighborX);
 
             if (std::abs((int)(neighborValue - value)) <= treshold) {
                 // On fusionne les régions dans la liste d'adjacence
@@ -419,7 +421,7 @@ void RegionGrowing::removeNoise(const unsigned int nbPixels) {
         }
     }
 
-    //// Print regions_pixels_count
+    // Print regions_pixels_count
     //for (int i = 0; i < regions_pixels_count.size(); i++) {
     //    std::cout << "Region " << i << " : " << regions_pixels_count[i] << " pixels" << std::endl;
     //}
@@ -428,7 +430,7 @@ void RegionGrowing::removeNoise(const unsigned int nbPixels) {
     for (int regionIdx = 0; regionIdx < regions_pixels_count.size(); regionIdx++) {
         if (regions_pixels_count[regionIdx] < nbPixels) {
             // On remplace la région par un de ses voisins dans la matrice des régions
-            int newRegion = *m_regions_adjacency[regionIdx].begin();
+            int newRegion = *(m_regions_adjacency[regionIdx].begin());
 
             for (int y = 0; y < m_image->rows; y++) {
                 for (int x = 0; x < m_image->cols; x++) {
@@ -459,6 +461,7 @@ void RegionGrowing::showSegmentation(std::string window_name, bool show_initials
     for (int i = 0; i < regions_img.rows; i++) {
         for (int j = 0; j < regions_img.cols; j++) {
             int val = m_region_matrix[i][j];
+
             if (val == -1) {//Partie de l'image qui n'a pas été "capturée" par les germes 
                 //Couleur noire
                 regions_img.at<cv::Vec3b>(i, j)[0] = 0;
@@ -580,6 +583,25 @@ void RegionGrowing::printRegionMatrix() {
         }
         std::cout << "]\n";
     }
+}
+
+void RegionGrowing::printRegionMatrixToFile(const std::string filename) {
+    std::ofstream outputFile;
+    outputFile.open(filename);
+
+    for (int i = 0; i < m_image->rows; i++) {
+        outputFile << "[";
+        for (int j = 0; j < m_image->cols; j++) {
+            int val = m_region_matrix[i][j];
+            if (val == -1)
+                outputFile << "-, ";
+            else
+                outputFile << val << ", ";
+        }
+        outputFile << "]\n";
+    }
+
+    outputFile.close();
 }
 
 void RegionGrowing::printRegionsAdjacency() {
