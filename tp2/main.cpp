@@ -56,6 +56,6 @@ int main() {
     cv::waitKey(0);*/
 
     regionGrowing.show_img("Avant blur");
-    regionGrowing.blur(3, 1);
+    regionGrowing.blur(9, 1);
     regionGrowing.show_img("Apres blur", true);
 }

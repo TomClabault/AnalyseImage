@@ -209,36 +209,54 @@ void RegionGrowing::segmentationDifference(const unsigned int treshold) {
     m_regions_computed = true;
 }
 
-double** compute_gaussian_kernel(unsigned int kernel_size, double sigma) {
+void compute_gaussian_kernel(double** kernel, unsigned int kernel_size, double sigma) {
+    unsigned int half_size = kernel_size / 2;
+    double kernel_sum = 0;
+
+    for (int y = 0; y < kernel_size; y++) {
+        for (int x = 0; x < kernel_size; x++) {
+            int shift_x = x - half_size;
+            int shift_y = y - half_size;
+
+            kernel[y][x] = 1.0 / (2 * PI * sigma * sigma) * exp(-((shift_x * shift_x + shift_y * shift_y) / (2 * sigma * sigma)));
+
+            kernel_sum += kernel[y][x];
+        }
+    }
+
+    //Pour être sûr que la somme des valeurs du noyau = 1
+    for (int y = 0; y < kernel_size; y++) {
+        for (int x = 0; x < kernel_size; x++) {
+            kernel[y][x] /= kernel_sum;
+        }
+    }
+}
+
+void RegionGrowing::blur(unsigned int kernel_size, double sigma) {
     double** kernel = (double**)malloc(sizeof(double*) * kernel_size);
     if (kernel == NULL) {
-        return nullptr;
+        return;
     }
 
     for (int i = 0; i < kernel_size; i++) {
         kernel[i] = (double*)malloc(sizeof(double) * kernel_size);
 
         if (kernel[i] == NULL) {
-            return nullptr;
+            return;
         }
+
     }
 
-    unsigned int half_size = kernel_size / 2;
+    compute_gaussian_kernel(kernel, kernel_size, sigma);
+    unsigned int half_kernel_size = kernel_size / 2;
+
     for (int y = 0; y < kernel_size; y++) {
         for (int x = 0; x < kernel_size; x++) {
-            unsigned int shift_x = x - half_size;
-            unsigned int shift_y = y - half_size;
-
-            kernel[y][x] = (1.0 / (2 * PI * sigma * sigma)) * exp(-(double)(shift_x * shift_x + shift_y * shift_y) / (2 * sigma * sigma));
+            std::cout << kernel[y][x] << " ";
         }
+
+        std::cout << "\n";
     }
-
-    return kernel;
-}
-
-void RegionGrowing::blur(unsigned int kernel_size, double sigma) {
-    double** kernel = compute_gaussian_kernel(kernel_size, sigma);
-    unsigned int half_kernel_size = kernel_size / 2;
 
     for (int y_img = 0; y_img < m_image->rows; y_img++) {
         for (int x_img = 0; x_img < m_image->cols; x_img++) {
