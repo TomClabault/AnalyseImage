@@ -10,7 +10,7 @@
 #define TEST_IMAGE_HEIGHT 9
 
 int main() {
-    std::string inputImagePath = "simpleImageGrayscale.png";
+    std::string inputImagePath = "lena_gray.bmp";
 
     OpenCVGrayscaleMat inputImage = cv::imread(inputImagePath, cv::IMREAD_GRAYSCALE);
 
@@ -44,7 +44,7 @@ int main() {
     positionsTestImage.push_back(std::pair<unsigned int, unsigned int>(7, 7));
 
     regionGrowing.blur(9, 1);
-    regionGrowing.placeSeedsManual(positionsSimpleImageGrayscale);
+    //regionGrowing.placeSeedsManual(positionsTestImage);
     regionGrowing.placeSeedsRandom(12);
     regionGrowing.segmentationDifference(5);
     regionGrowing.showSegmentation("Segmentation before fusion", true);
@@ -52,7 +52,6 @@ int main() {
     regionGrowing.showSegmentation("Segmentation after fusion", true);
     regionGrowing.removeNoise(100);
     regionGrowing.showSegmentation("Segmentation after noise removal", true);
-    regionGrowing.showRegionBorders("Bordure des regions", false);
-    regionGrowing.showRegionBorders("Bordure des regions avec seeds", true);
+    regionGrowing.showRegionBorders("Bordure des regions", true);
     cv::waitKey(0);
 }

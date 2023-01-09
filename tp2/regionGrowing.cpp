@@ -46,7 +46,10 @@ RegionGrowing::~RegionGrowing() {
 
 void RegionGrowing::placeSeedsManual(std::vector<std::pair<unsigned int, unsigned int>> positionsList) {
     m_seeds_placed = true;
-    m_seeds_positions.resize(positionsList.size());
+
+    m_seeds_positions.clear();
+    m_seeds_positions.reserve(positionsList.size());
+
     m_regions_adjacency.resize(positionsList.size());
     m_nb_regions = positionsList.size();
 
@@ -61,7 +64,10 @@ void RegionGrowing::placeSeedsManual(std::vector<std::pair<unsigned int, unsigne
 
 void RegionGrowing::placeSeedsRandom(const unsigned int nb_seeds) {
     m_seeds_placed = true;
-    m_seeds_positions.resize(nb_seeds);
+
+    m_seeds_positions.clear();
+    m_seeds_positions.reserve(nb_seeds);
+
     m_regions_adjacency.resize(nb_seeds);
     m_nb_regions = nb_seeds;
 
@@ -140,12 +146,11 @@ void RegionGrowing::segmentationDifference(const unsigned int treshold) {
 
     std::deque<Seed> active_seeds;
 
-    unsigned int index = 0;
     for (const std::pair<unsigned int, unsigned int>& initial_seed_position : m_seeds_positions) {
         unsigned int x = initial_seed_position.first;
         unsigned int y = initial_seed_position.second;
 
-        Seed seed(x, y, index);
+        Seed seed(x, y, 0);
 
         active_seeds.push_back(seed);
     }
@@ -250,14 +255,6 @@ void RegionGrowing::blur(unsigned int kernel_size, double sigma) {
     compute_gaussian_kernel(kernel, kernel_size, sigma);
     unsigned int half_kernel_size = kernel_size / 2;
 
-    for (int y = 0; y < kernel_size; y++) {
-        for (int x = 0; x < kernel_size; x++) {
-            std::cout << kernel[y][x] << " ";
-        }
-
-        std::cout << "\n";
-    }
-
     for (int y_img = 0; y_img < m_image->rows; y_img++) {
         for (int x_img = 0; x_img < m_image->cols; x_img++) {
             unsigned char current_pixel_value = (*m_image)(y_img, x_img);
@@ -288,6 +285,12 @@ void RegionGrowing::blur(unsigned int kernel_size, double sigma) {
             (*m_image)(y_img, x_img) = (unsigned char)new_pixel_value;
         }
     }
+
+    for (int i = 0; i < kernel_size; i++) {
+        free(kernel[i]);
+    }
+
+    free(kernel);
 }
 
 void RegionGrowing::normalizeAdjacency() {
