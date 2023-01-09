@@ -53,11 +53,7 @@ void RegionGrowing::placeSeedsManual(std::vector<std::pair<unsigned int, unsigne
     m_regions_adjacency.resize(positionsList.size());
     m_nb_regions = positionsList.size();
 
-    unsigned int index = 0;
-
     for (const std::pair<unsigned int, unsigned int>& position : positionsList) {
-        m_region_matrix[position.second][position.first] = index++;
-
         m_seeds_positions.push_back(position);
     }
 }
@@ -116,7 +112,7 @@ void RegionGrowing::placeSeedsRandom(const unsigned int nb_seeds) {
 
     std::shuffle(randomCellIndexes.begin(), randomCellIndexes.end(), std::default_random_engine(randomSeed));
 
-    for (unsigned int i = 0; i < nb_seeds; i++) {
+    for (int i = 0; i < nb_seeds; i++) {
         unsigned int randomCellIndex = randomCellIndexes.at(i);
 
         //TODO (Tom) remplacer le rand par un générateur plus rapide car std::rand = slow
@@ -126,12 +122,11 @@ void RegionGrowing::placeSeedsRandom(const unsigned int nb_seeds) {
         unsigned int randomX = std::rand() % cellWidth + (randomCellIndex % nbCellsPerRow) * cellWidth;
         unsigned int randomY = std::rand() % cellHeight + (randomCellIndex / nbCellsPerRow) * cellHeight;
 
-        //On va positioner le germe à la position aléatoire calculée.
-        //Les germes vont avoir pour valeur 0, 1, i-1. Cela correspondra
-        //aux valeurs des pixels des régions plus tard
-        m_region_matrix[randomY][randomX] = i;
-
         m_seeds_positions.push_back(std::pair<unsigned int, unsigned int>(randomX, randomY));
+    }
+
+    for (int i = 0; i < m_seeds_positions.size(); i++) {
+        std::cout << "seed " << i << ": " << m_seeds_positions.at(i).first << ", " << m_seeds_positions.at(i).second << std::endl;
     }
 
     delete[] cellWidths;
@@ -146,13 +141,15 @@ void RegionGrowing::segmentationDifference(const unsigned int treshold) {
 
     std::deque<Seed> active_seeds;
 
+    int index = 0;
     for (const std::pair<unsigned int, unsigned int>& initial_seed_position : m_seeds_positions) {
         unsigned int x = initial_seed_position.first;
         unsigned int y = initial_seed_position.second;
 
-        Seed seed(x, y, 0);
+        Seed seed(x, y, (*m_image)(y, x), index++);
 
         active_seeds.push_back(seed);
+        m_region_matrix[y][x] = seed.region;
     }
 
     //On va faire grandir les régions tant qu'il y a des seeds
@@ -163,11 +160,11 @@ void RegionGrowing::segmentationDifference(const unsigned int treshold) {
         unsigned int x = seed.position_x;
         unsigned int y = seed.position_y;
 
-        //Valeur du pixel de référence
-        unsigned int value = (*m_image)(seed.position_y, seed.position_x);
+        //Valeur du pixel
+        unsigned int value = seed.value;
 
         //Valeurs des pixels au dessus, à gauche, à droite ou en dessous du germe
-        int neighborPixels[4] = {
+        int neighborPixelsValues[4] = {
             (y >= 1) ? (*m_image)(y - 1, x) : -1,
             (x >= 1) ? (*m_image)(y, x - 1) : -1,
             (y < m_image->rows - 1) ? (*m_image)(y + 1, x) : -1,
@@ -188,24 +185,24 @@ void RegionGrowing::segmentationDifference(const unsigned int treshold) {
             int xNeighbor = x + xOffset;
             int yNeighbor = y + yOffset;
 
-            int neighborPixelValue = neighborPixels[offset];
-            int neighborSeedValue = neighborPixelValue == -1 ? -1 : m_region_matrix[yNeighbor][xNeighbor];
+            int neighborPixelValue = neighborPixelsValues[offset];
+            int neighborSeedRegion = neighborPixelValue == -1 ? -1 : m_region_matrix[yNeighbor][xNeighbor];
 
-            if (neighborPixelValue != -1 && //On a bien un pixel au dessus
+            if (neighborPixelValue != -1 && //On a bien un pixel voisin (on est pas en dehors de l'image)
                 std::abs((int)(neighborPixelValue - value)) <= treshold) {//Le pixel satisfait le critère de ressemblance
 
-                if (neighborSeedValue == -1) { //Le pixel voisin n'a pas encore été visité par un germe
-                    Seed new_seed(xNeighbor, yNeighbor, m_region_matrix[y][x]);
+                if (neighborSeedRegion == -1) { //Le pixel voisin n'a pas encore été visité par un germe
+                    Seed new_seed(xNeighbor, yNeighbor, seed.value, seed.region);
 
                     active_seeds.push_back(new_seed);
-                    m_region_matrix[yNeighbor][xNeighbor] = m_region_matrix[y][x];
+                    m_region_matrix[yNeighbor][xNeighbor] = seed.region;
                 }
             }
 
-            if (neighborSeedValue != seed.value && neighborSeedValue != -1) { //Le pixel voisin est déjà occupé par un germe et ce n'est pas un germe de notre propre région
+            if (neighborSeedRegion != seed.region && neighborSeedRegion != -1) { //Le pixel voisin est déjà occupé par un germe et ce n'est pas un germe de notre propre région
                 //Le pixel a déjà été visité, on va ajouter la valeur du germe voisin
                 //à la liste des régions adjacentes de la région actuelle
-                m_regions_adjacency[seed.value].insert(neighborSeedValue);
+                m_regions_adjacency[seed.region].insert(neighborSeedRegion);
             }
         }
     }
@@ -422,10 +419,10 @@ void RegionGrowing::removeNoise(const unsigned int nbPixels) {
         }
     }
 
-    // Print regions_pixels_count
-    for (int i = 0; i < regions_pixels_count.size(); i++) {
-        std::cout << "Region " << i << " : " << regions_pixels_count[i] << " pixels" << std::endl;
-    }
+    //// Print regions_pixels_count
+    //for (int i = 0; i < regions_pixels_count.size(); i++) {
+    //    std::cout << "Region " << i << " : " << regions_pixels_count[i] << " pixels" << std::endl;
+    //}
 
     // On remplace la région par un de ses voisins dans la matrice des régions
     for (int regionIdx = 0; regionIdx < regions_pixels_count.size(); regionIdx++) {

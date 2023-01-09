@@ -32,25 +32,25 @@ int main() {
     RegionGrowing regionGrowing(&inputImage);
 
     std::vector<std::pair<unsigned int, unsigned int>> positionsSimpleImageGrayscale;
-    positionsSimpleImageGrayscale.push_back(std::pair<unsigned int, unsigned int>(59, 74));
-    positionsSimpleImageGrayscale.push_back(std::pair<unsigned int, unsigned int>(115, 69));
+    positionsSimpleImageGrayscale.push_back(std::pair<unsigned int, unsigned int>(386, 344));
+    /*positionsSimpleImageGrayscale.push_back(std::pair<unsigned int, unsigned int>(115, 69));
     positionsSimpleImageGrayscale.push_back(std::pair<unsigned int, unsigned int>(125, 138));
     positionsSimpleImageGrayscale.push_back(std::pair<unsigned int, unsigned int>(112, 218));
-    positionsSimpleImageGrayscale.push_back(std::pair<unsigned int, unsigned int>(35, 168));
+    positionsSimpleImageGrayscale.push_back(std::pair<unsigned int, unsigned int>(35, 168));*/
 
     std::vector<std::pair<unsigned int, unsigned int>> positionsTestImage;
     positionsTestImage.push_back(std::pair<unsigned int, unsigned int>(0, 0));
     positionsTestImage.push_back(std::pair<unsigned int, unsigned int>(1, 0));
     positionsTestImage.push_back(std::pair<unsigned int, unsigned int>(7, 7));
 
-    regionGrowing.blur(9, 1);
-    //regionGrowing.placeSeedsManual(positionsTestImage);
+    //regionGrowing.blur(9, 1);
+    //regionGrowing.placeSeedsManual(positionsSimpleImageGrayscale);
     regionGrowing.placeSeedsRandom(12);
     regionGrowing.segmentationDifference(5);
     regionGrowing.showSegmentation("Segmentation before fusion", true);
     regionGrowing.regionFusion(10);
     regionGrowing.showSegmentation("Segmentation after fusion", true);
-    regionGrowing.removeNoise(100);
+    //regionGrowing.removeNoise(100);
     regionGrowing.showSegmentation("Segmentation after noise removal", true);
     regionGrowing.showRegionBorders("Bordure des regions", true);
     cv::waitKey(0);

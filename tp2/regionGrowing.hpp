@@ -12,12 +12,13 @@ typedef cv::Mat_<unsigned char> OpenCVGrayscaleMat;
 class RegionGrowing {
 public:
     struct Seed {
-        Seed(unsigned int x, unsigned int y, int val) : position_x(x), position_y(y), value(val) {}
+        Seed(unsigned int x, unsigned int y, int val, int region_number) : position_x(x), position_y(y), value(val), region(region_number) {}
 
         unsigned int position_x;
         unsigned int position_y;
 
-        int value;
+        int value;//La valeur de la seed
+        int region;//Le numero de la region à laquelle appartient la seed
     };
 
     RegionGrowing(OpenCVGrayscaleMat* image);
