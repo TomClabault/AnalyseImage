@@ -209,6 +209,69 @@ void RegionGrowing::segmentationDifference(const unsigned int treshold) {
     m_regions_computed = true;
 }
 
+double** compute_gaussian_kernel(unsigned int kernel_size, double sigma) {
+    double** kernel = (double**)malloc(sizeof(double*) * kernel_size);
+    if (kernel == NULL) {
+        return nullptr;
+    }
+
+    for (int i = 0; i < kernel_size; i++) {
+        kernel[i] = (double*)malloc(sizeof(double) * kernel_size);
+
+        if (kernel[i] == NULL) {
+            return nullptr;
+        }
+    }
+
+    unsigned int half_size = kernel_size / 2;
+    for (int y = 0; y < kernel_size; y++) {
+        for (int x = 0; x < kernel_size; x++) {
+            unsigned int shift_x = x - half_size;
+            unsigned int shift_y = y - half_size;
+
+            kernel[y][x] = (1.0 / (2 * PI * sigma * sigma)) * exp(-(double)(shift_x * shift_x + shift_y * shift_y) / (2 * sigma * sigma));
+        }
+    }
+
+    return kernel;
+}
+
+void RegionGrowing::blur(unsigned int kernel_size, double sigma) {
+    double** kernel = compute_gaussian_kernel(kernel_size, sigma);
+    unsigned int half_kernel_size = kernel_size / 2;
+
+    for (int y_img = 0; y_img < m_image->rows; y_img++) {
+        for (int x_img = 0; x_img < m_image->cols; x_img++) {
+            unsigned char current_pixel_value = (*m_image)(y_img, x_img);
+
+            double new_pixel_value = 0;
+            for (int y_kernel = 0; y_kernel < kernel_size; y_kernel++) {
+                for (int x_kernel = 0; x_kernel < kernel_size; x_kernel++) {
+                    int y_kernel_shift = y_kernel - half_kernel_size;
+                    int x_kernel_shift = x_kernel - half_kernel_size;
+
+                    unsigned int y_pos = y_img + y_kernel_shift;
+                    unsigned int x_pos = x_img + x_kernel_shift;
+
+                    unsigned char pixel_value;
+
+                    //Si on est en train de dépasser des bords de l'image
+                    if (y_pos < 0 || y_pos >= m_image->rows || x_pos < 0 || x_pos >= m_image->cols) {
+                        //On va considérer que la valeur du pixel est la même que celle du pixel courant
+                        pixel_value = current_pixel_value;
+                    } else {
+                        pixel_value = (*m_image)(y_pos, x_pos);
+                    }
+
+                    new_pixel_value += pixel_value * kernel[y_kernel][x_kernel];
+                }
+            }
+
+            (*m_image)(y_img, x_img) = (unsigned char)new_pixel_value;
+        }
+    }
+}
+
 void RegionGrowing::normalizeAdjacency() {
     for (int regionIndex = 0; regionIndex < m_regions_adjacency.size(); regionIndex++) {
         for (int neighborRegion : m_regions_adjacency[regionIndex]) {
@@ -404,6 +467,14 @@ void RegionGrowing::showSegmentation(std::string window_name, bool show_initials
     }
 
     cv::imshow(window_name, regions_img);
+}
+
+void RegionGrowing::show_img(std::string window_name, bool wait_for_key) {
+    cv::imshow(window_name, *m_image);
+
+    if (wait_for_key) {
+        cv::waitKey(0);
+    }
 }
 
 void RegionGrowing::showSeeds(cv::Mat* image, cv::Scalar color) {

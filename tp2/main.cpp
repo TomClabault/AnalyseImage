@@ -44,7 +44,7 @@ int main() {
     positionsTestImage.push_back(std::pair<unsigned int, unsigned int>(7, 7));
 
     //regionGrowing.placeSeedsManual(positionsSimpleImageGrayscale);
-    regionGrowing.placeSeedsRandom(12);
+    /*regionGrowing.placeSeedsRandom(12);
     regionGrowing.segmentationDifference(5);
     regionGrowing.showSegmentation("Segmentation before fusion", true);
     regionGrowing.regionFusion(10);
@@ -53,5 +53,9 @@ int main() {
     regionGrowing.showSegmentation("Segmentation after noise removal", true);
     regionGrowing.showRegionBorders("Bordure des regions", false);
     regionGrowing.showRegionBorders("Bordure des regions avec seeds", true);
-    cv::waitKey(0);
+    cv::waitKey(0);*/
+
+    regionGrowing.show_img("Avant blur");
+    regionGrowing.blur(3, 1);
+    regionGrowing.show_img("Apres blur", true);
 }

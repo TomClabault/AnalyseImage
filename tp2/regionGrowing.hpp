@@ -5,6 +5,8 @@
 #include <opencv2/highgui.hpp>
 #include "opencv2/imgproc.hpp"
 
+#define PI 3.141592653589793238462643383279502884
+
 typedef cv::Mat_<unsigned char> OpenCVGrayscaleMat;
 
 class RegionGrowing {
@@ -49,6 +51,14 @@ public:
     void segmentationDifference(const unsigned int treshold);
 
     /**
+     * Floute l'image dans le but d'éliminer le bruit afin de rendre la segmentation plus efficace 
+     * 
+     * @param kernel_size La taille du noyau gaussien qui va être utilisé pour flouter l'image
+     * @param sigma Le paramètre sigma du noyau gaussien
+     */
+    void blur(unsigned int kernel_size, double sigma);
+
+    /**
      * S'assure que les listes d'adjacence de deux régions adjacentes se contiennent bien l'une
      * l'autre. Dû à la façon dont les adjacences sont construites pendant l'étalement des germes,
      * il se peut qu'une région A soit adjacente a une région B (en se fiant à m_regions_adjacency)
@@ -82,6 +92,14 @@ public:
     */
     void showRegionBorders(std::string window_name, bool show_initial_seeds);
     void showSegmentation(std::string window_name, bool show_initials_seeds);
+
+    /**
+     * Affiche l'image contenue dans m_image
+     * 
+     * @param window_name Nom de la fenêtre d'affichage
+     * @param wait_for_key Si oui ou non attendre pour l'appui d'une touche avant de continuer l'exécution
+     */
+    void show_img(std::string window_name, bool wait_for_key = false);
 
     /**
      * Rajoute du texte sur l'image donnée qui montre là où étaient les seeds
