@@ -43,15 +43,6 @@ public:
     void placeSeedsRandom(const unsigned int nb_seeds_per_row);
 
     /**
-     * Lance la segmentation de l'image (grossissement des germes).
-     * Cette segmentation va utiliser une valeur seuil pour savoir si oui
-     * ou non un germe doit grossir sur un pixel adjacent ou non.
-     * Si la différence de valeur entre les deux pixels est inférieure ou égale
-     * au treshold, le pixel sera pris en compte
-     */
-    void segmentationDifference(const unsigned int treshold);
-
-    /**
      * Floute l'image dans le but d'éliminer le bruit afin de rendre la segmentation plus efficace 
      * 
      * @param kernel_size La taille du noyau gaussien qui va être utilisé pour flouter l'image
@@ -73,7 +64,6 @@ public:
      */
     bool isRegionAdjacent(int regionAValue, int regionBValue);
 
-
     /**
      * Teste si un pixel donné est en bordure de sa région ou non (en connexité 4). 
      * L'image doit avoir préalalement été segmentée avant d'appeler cette fonction
@@ -83,7 +73,6 @@ public:
      */
     bool is_pixel_on_border(int pixel_value, unsigned int y_pixel, unsigned int x_pixel);
 
-    void regionFusion(const unsigned int treshold);
     void removeNoise(const unsigned int nbPixels);
 
     void printRegionMatrix();
@@ -110,7 +99,7 @@ public:
      */
     void showSeeds(cv::Mat* image, cv::Scalar color = cv::Scalar(0, 0, 0));
 
-private:
+protected:
     bool m_seeds_placed;
     bool m_regions_computed;
 
@@ -138,4 +127,64 @@ private:
     //Ainsi si m_regions_adjacency[0] = { 1, 2, 3 }, cela signifie que tous les germes de valeurs 1, 2 ou 3
     //dans la m_region_matrix forment des régions (les régions 1, 2 et 3) qui sont adjacentes à la région 0
     std::vector<std::unordered_set<int>> m_regions_adjacency;
+};
+
+class RegionGrowingDifference : public RegionGrowing {
+public:
+    RegionGrowingDifference(OpenCVGrayscaleMat* image);
+
+    /**
+     * Lance la segmentation de l'image (grossissement des germes).
+     * Cette segmentation va utiliser une valeur seuil pour savoir si oui
+     * ou non un germe doit grossir sur un pixel adjacent ou non.
+     * Si la différence de valeur entre les deux pixels est inférieure ou égale
+     * au treshold, le pixel sera pris en compte
+     */
+    void segmentation(const unsigned int treshold);
+
+    /**
+     * Fusione les régions similaires et adjacentes selon le treshold donné
+     */
+    void regionFusion(const unsigned int treshold);
+};
+
+class RegionGrowingAverage : public RegionGrowing {
+public:
+    RegionGrowingAverage(OpenCVGrayscaleMat* image);
+
+    /**
+     * Lacement la segmentation de l'image
+     * Cette segmentation va admettre un nouveau pixel dans la région
+     * si la valeur du pixel est similaire (au treshold près) à la valeur
+     * moyenne des pixels de la région
+     *
+     * @param treshold Valeur seuil pour l'admission d'un nouveau pixel lors de la
+     * comparaison de sa valeur avec la valeur moyenne de la région
+     */
+    void segmentation(const float treshold);
+
+    /**
+     * Fusione les régions similaires et adjacentes selon le treshold donné
+     */
+    void regionFusion(const float average_threshold);
+
+    /** 
+     * Redéfinition de la fonction ici afin de pouvoir utiliser les raccourcis de calculs mis en place
+     * dans la fonction 'regionFusion'
+     */
+    void showSegmentation(const std::string& window_name, const bool show_initials_seeds);
+
+protected:
+    /**
+     * Va stocker la valeur moyenne des pixels des régions calculées pendant la segmentation de l'image
+     */
+    std::vector<float> m_regions_averages;
+
+    /**
+     * Nouveaux indices des régions après fusion: certaines régions vont prendre le même indice de région
+     * qu'une autre région puisqu'elles ont été fusionnées
+     * 
+     * Par exemple, le nouvel indice de la région "d'indice de base" 2 se trouve en m_new_regions_indexes.at(2).
+     */
+    std::vector<unsigned int> m_new_regions_indexes;
 };

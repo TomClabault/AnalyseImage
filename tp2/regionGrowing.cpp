@@ -19,8 +19,6 @@
 typedef RegionGrowing::Seed Seed;
 
 RegionGrowing::RegionGrowing(OpenCVGrayscaleMat* image) {
-    std::cout << "Image [" << image->cols << ", " << image->rows << "]\n";
-
     m_image = image;
 
     //Création de la matrice de la même taille que l'image pour accueillir les données
@@ -127,90 +125,13 @@ void RegionGrowing::placeSeedsRandom(const unsigned int nb_seeds) {
     }
 
     //Affichage des positions des seeds
-    /*for (int i = 0; i < m_seeds_positions.size(); i++) {
-        std::cout << "seed " << i << ": " << m_seeds_positions.at(i).first << ", " << m_seeds_positions.at(i).second << std::endl;
-    }*/
+    for (int i = 0; i < m_seeds_positions.size(); i++) {
+        std::cout << "positionsSimpleImageGrayscale.push_back(std::pair<unsigned int, unsigned int>(" << m_seeds_positions.at(i).first << ", " << m_seeds_positions.at(i).second << "));" << std::endl;
+        //std::cout << "seed " << i << ": " << m_seeds_positions.at(i).first << ", " << m_seeds_positions.at(i).second << std::endl;
+    }
 
     delete[] cellWidths;
     delete[] cellHeights;
-}
-
-void RegionGrowing::segmentationDifference(const unsigned int treshold) {
-    //On vérifie bien que les seeds sont placées avant de commencer
-    if(!m_seeds_placed) {
-        return;
-    }
-
-    std::deque<Seed> active_seeds;
-
-    int index = 0;
-    for (const std::pair<unsigned int, unsigned int>& initial_seed_position : m_seeds_positions) {
-        unsigned int x = initial_seed_position.first;
-        unsigned int y = initial_seed_position.second;
-
-        Seed seed(x, y, (*m_image)(y, x), index++);
-
-        active_seeds.push_back(seed);
-        m_region_matrix[y][x] = seed.region;
-    }
-
-    //On va faire grandir les régions tant qu'il y a des seeds
-    while (!active_seeds.empty()) {
-        Seed seed = active_seeds.front();
-        active_seeds.pop_front();
-
-        unsigned int x = seed.position_x;
-        unsigned int y = seed.position_y;
-
-        //Valeur du pixel
-        unsigned int value = seed.value;
-
-        //Valeurs des pixels au dessus, à gauche, à droite ou en dessous du germe
-        int neighborPixelsValues[4] = {
-            (y >= 1) ? (*m_image)(y - 1, x) : -1,
-            (x >= 1) ? (*m_image)(y, x - 1) : -1,
-            (y < m_image->rows - 1) ? (*m_image)(y + 1, x) : -1,
-            (x < m_image->cols - 1) ? (*m_image)(y, x + 1) : -1
-        };
-
-        //Offsets utilisés pour factoriser le code
-        //Ces offsets correspondent aux décalages que l'on doit appliquer
-        //au pixel de référence pour obtenir, dans l'ordre:
-        //top, left, bottom, right
-        int xOffsets[4] = { 0, -1, 0, 1 };
-        int yOffsets[4] = { -1, 0, 1, 0 };
-
-        for (int offset = 0; offset < 4; offset++) {
-            int xOffset = xOffsets[offset];
-            int yOffset = yOffsets[offset];
-
-            int xNeighbor = x + xOffset;
-            int yNeighbor = y + yOffset;
-
-            int neighborPixelValue = neighborPixelsValues[offset];
-            int neighborSeedRegion = neighborPixelValue == -1 ? -1 : m_region_matrix[yNeighbor][xNeighbor];
-
-            if (neighborPixelValue != -1 && //On a bien un pixel voisin (on est pas en dehors de l'image)
-                std::abs((int)(neighborPixelValue - value)) <= treshold) {//Le pixel satisfait le critère de ressemblance
-
-                if (neighborSeedRegion == -1) { //Le pixel voisin n'a pas encore été visité par un germe
-                    Seed new_seed(xNeighbor, yNeighbor, seed.value, seed.region);
-
-                    active_seeds.push_back(new_seed);
-                    m_region_matrix[yNeighbor][xNeighbor] = seed.region;
-                }
-            }
-
-            if (neighborSeedRegion != seed.region && neighborSeedRegion != -1) { //Le pixel voisin est déjà occupé par un germe et ce n'est pas un germe de notre propre région
-                //Le pixel a déjà été visité, on va ajouter la valeur du germe voisin
-                //à la liste des régions adjacentes de la région actuelle
-                m_regions_adjacency[seed.region].insert(neighborSeedRegion);
-            }
-        }
-    }
-
-    normalizeAdjacency();
-    m_regions_computed = true;
 }
 
 void compute_gaussian_kernel(double** kernel, unsigned int kernel_size, double sigma) {
@@ -324,86 +245,6 @@ bool RegionGrowing::is_pixel_on_border(int pixel_value, unsigned int y_pixel, un
     return false;
 }
 
-void RegionGrowing::regionFusion(const unsigned int treshold) {
-    // On vérifie bien que les regions sont placées avant de commencer
-    if (!m_regions_computed) {
-        return;
-    }
-
-    std::deque<int> active_regions_idx;
-
-    // On ajoute toutes les régions à la file
-    for (int regionIndex = 0; regionIndex < m_regions_adjacency.size(); regionIndex++) {
-        active_regions_idx.push_back(regionIndex);
-    }
-
-    // On va fusionner les régions tant qu'il y a des régions dans la file
-    while (!active_regions_idx.empty()) {
-        int regionIdx = active_regions_idx.front();
-        active_regions_idx.pop_front();
-        
-        unsigned int x = m_seeds_positions[regionIdx].first;
-        unsigned int y = m_seeds_positions[regionIdx].second;
-
-        //Valeur du pixel de la région
-        unsigned int value = (*m_image)(y, x);
-
-        auto it = m_regions_adjacency[regionIdx].begin();
-        bool hasBeenMerged = false;
-        while (!hasBeenMerged && it != m_regions_adjacency[regionIdx].end()) {
-            int neighborRegionIdx = *it;
-
-            int neighborX = m_seeds_positions[neighborRegionIdx].first;
-            int neighborY = m_seeds_positions[neighborRegionIdx].second;
-
-            unsigned char neighborValue = (*m_image)(neighborY, neighborX);
-
-            if (std::abs((int)(neighborValue - value)) <= treshold) {
-                // On fusionne les régions dans la liste d'adjacence
-                m_regions_adjacency[regionIdx].insert(m_regions_adjacency[neighborRegionIdx].begin(), m_regions_adjacency[neighborRegionIdx].end());
-                m_regions_adjacency[regionIdx].erase(neighborRegionIdx);
-                m_regions_adjacency[regionIdx].erase(regionIdx);
-
-                // On fusionne les régions dans la matrice
-                for (int y = 0; y < m_image->rows; y++) {
-                    for (int x = 0; x < m_image->cols; x++) {
-                        if (m_region_matrix[y][x] == neighborRegionIdx) {
-                            m_region_matrix[y][x] = regionIdx;
-                        }
-                    }
-                }
-
-                // On "supprime" la région fusionnée dans la liste d'adjacence en changeant ses voisins par -1
-                m_regions_adjacency[neighborRegionIdx].clear();
-                m_regions_adjacency[neighborRegionIdx].insert(-1);
-
-                // On ajoute la "nouvelle" région à la file
-                active_regions_idx.push_back(regionIdx);
-
-                // On supprime la région fusionnée de la file
-                active_regions_idx.erase(
-                    std::remove(active_regions_idx.begin(), active_regions_idx.end(), neighborRegionIdx),
-                    active_regions_idx.end()
-                );
-
-                // On remplace la région fusionnée par la nouvelle région dans chaque liste d'adjacence
-                for (int regionIndex = 0; regionIndex < m_regions_adjacency.size(); regionIndex++) {
-                    // Si la région d'adjacence n'a pas été supprimé (-1)
-                    // et que la région d'adjacence contient la région à supprimer
-                    if (m_regions_adjacency[regionIndex].find(-1) == m_regions_adjacency[regionIndex].end()
-                        && m_regions_adjacency[regionIndex].find(neighborRegionIdx) != m_regions_adjacency[regionIndex].end()) {
-                        m_regions_adjacency[regionIndex].erase(neighborRegionIdx);
-                        m_regions_adjacency[regionIndex].insert(regionIdx);
-                    }
-                }
-                
-                hasBeenMerged = true;
-            }
-            it++;
-        }
-    }
-}
-
 void RegionGrowing::removeNoise(const unsigned int nbPixels) {
     // On vérifie bien que les regions sont placées avant de commencer
     if (!m_regions_computed) {
@@ -486,6 +327,10 @@ void RegionGrowing::showSegmentation(std::string window_name, bool show_initials
     if (show_initials_seeds) {
         showSeeds(&regions_img);
     }
+
+    //Resize dans le cas d'une image plus grande que l'écran
+    //cv::Mat resized;
+    //cv::resize(regions_img, resized, cv::Size(1920, 1080), cv::INTER_LINEAR);
 
     cv::imshow(window_name, regions_img);
 }
@@ -617,4 +462,365 @@ void RegionGrowing::printRegionsAdjacency() {
 
         std::cout << std::endl;
     }
+}
+
+RegionGrowingDifference::RegionGrowingDifference(OpenCVGrayscaleMat* image) : RegionGrowing(image) {}
+
+void RegionGrowingDifference::segmentation(const unsigned int treshold) {
+    //On vérifie bien que les seeds sont placées avant de commencer
+    if (!m_seeds_placed) {
+        return;
+    }
+
+    std::deque<Seed> active_seeds;
+
+    int index = 0;
+    for (const std::pair<unsigned int, unsigned int>& initial_seed_position : m_seeds_positions) {
+        unsigned int x = initial_seed_position.first;
+        unsigned int y = initial_seed_position.second;
+
+        Seed seed(x, y, (*m_image)(y, x), index++);
+
+        active_seeds.push_back(seed);
+        m_region_matrix[y][x] = seed.region;
+    }
+
+    //On va faire grandir les régions tant qu'il y a des seeds
+    while (!active_seeds.empty()) {
+        Seed seed = active_seeds.front();
+        active_seeds.pop_front();
+
+        unsigned int x = seed.position_x;
+        unsigned int y = seed.position_y;
+
+        //Valeur du pixel
+        unsigned int value = seed.value;
+
+        //Valeurs des pixels au dessus, à gauche, à droite ou en dessous du germe
+        int neighborPixelsValues[4] = {
+            (y >= 1) ? (*m_image)(y - 1, x) : -1,
+            (x >= 1) ? (*m_image)(y, x - 1) : -1,
+            (y < m_image->rows - 1) ? (*m_image)(y + 1, x) : -1,
+            (x < m_image->cols - 1) ? (*m_image)(y, x + 1) : -1
+        };
+
+        //Offsets utilisés pour factoriser le code
+        //Ces offsets correspondent aux décalages que l'on doit appliquer
+        //au pixel de référence pour obtenir, dans l'ordre:
+        //top, left, bottom, right
+        int xOffsets[4] = { 0, -1, 0, 1 };
+        int yOffsets[4] = { -1, 0, 1, 0 };
+
+        for (int offset = 0; offset < 4; offset++) {
+            int xOffset = xOffsets[offset];
+            int yOffset = yOffsets[offset];
+
+            int xNeighbor = x + xOffset;
+            int yNeighbor = y + yOffset;
+
+            int neighborPixelValue = neighborPixelsValues[offset];
+            int neighborSeedRegion = neighborPixelValue == -1 ? -1 : m_region_matrix[yNeighbor][xNeighbor];
+
+            if (neighborPixelValue != -1 && //On a bien un pixel voisin (on est pas en dehors de l'image)
+                std::abs((int)(neighborPixelValue - value)) <= treshold) {//Le pixel satisfait le critère de ressemblance
+
+                if (neighborSeedRegion == -1) { //Le pixel voisin n'a pas encore été visité par un germe
+                    Seed new_seed(xNeighbor, yNeighbor, seed.value, seed.region);
+
+                    active_seeds.push_back(new_seed);
+                    m_region_matrix[yNeighbor][xNeighbor] = seed.region;
+                }
+            }
+
+            if (neighborSeedRegion != seed.region && neighborSeedRegion != -1) { //Le pixel voisin est déjà occupé par un germe et ce n'est pas un germe de notre propre région
+                //Le pixel a déjà été visité, on va ajouter la valeur du germe voisin
+                //à la liste des régions adjacentes de la région actuelle
+                m_regions_adjacency[seed.region].insert(neighborSeedRegion);
+            }
+        }
+    }
+
+    normalizeAdjacency();
+    m_regions_computed = true;
+}
+
+void RegionGrowingDifference::regionFusion(const unsigned int treshold) {
+    // On vérifie bien que les regions sont placées avant de commencer
+    if (!m_regions_computed) {
+        return;
+    }
+
+    std::deque<int> active_regions_idx;
+
+    // On ajoute toutes les régions à la file
+    for (int regionIndex = 0; regionIndex < m_regions_adjacency.size(); regionIndex++) {
+        active_regions_idx.push_back(regionIndex);
+    }
+
+    // On va fusionner les régions tant qu'il y a des régions dans la file
+    while (!active_regions_idx.empty()) {
+        int regionIdx = active_regions_idx.front();
+        active_regions_idx.pop_front();
+
+        unsigned int x = m_seeds_positions[regionIdx].first;
+        unsigned int y = m_seeds_positions[regionIdx].second;
+
+        //Valeur du pixel de la région
+        unsigned int value = (*m_image)(y, x);
+
+        auto it = m_regions_adjacency[regionIdx].begin();
+        bool hasBeenMerged = false;
+        while (!hasBeenMerged && it != m_regions_adjacency[regionIdx].end()) {
+            int neighborRegionIdx = *it;
+
+            int neighborX = m_seeds_positions[neighborRegionIdx].first;
+            int neighborY = m_seeds_positions[neighborRegionIdx].second;
+
+            unsigned char neighborValue = (*m_image)(neighborY, neighborX);
+
+            if (std::abs((int)(neighborValue - value)) <= treshold) {
+                // On fusionne les régions dans la liste d'adjacence
+                m_regions_adjacency[regionIdx].insert(m_regions_adjacency[neighborRegionIdx].begin(), m_regions_adjacency[neighborRegionIdx].end());
+                m_regions_adjacency[regionIdx].erase(neighborRegionIdx);
+                m_regions_adjacency[regionIdx].erase(regionIdx);
+
+                // On fusionne les régions dans la matrice
+                for (int y = 0; y < m_image->rows; y++) {
+                    for (int x = 0; x < m_image->cols; x++) {
+                        if (m_region_matrix[y][x] == neighborRegionIdx) {
+                            m_region_matrix[y][x] = regionIdx;
+                        }
+                    }
+                }
+
+                // On "supprime" la région fusionnée dans la liste d'adjacence en changeant ses voisins par -1
+                m_regions_adjacency[neighborRegionIdx].clear();
+                m_regions_adjacency[neighborRegionIdx].insert(-1);
+
+                // On ajoute la "nouvelle" région à la file
+                active_regions_idx.push_back(regionIdx);
+
+                // On supprime la région fusionnée de la file
+                active_regions_idx.erase(
+                    std::remove(active_regions_idx.begin(), active_regions_idx.end(), neighborRegionIdx),
+                    active_regions_idx.end()
+                );
+
+                // On remplace la région fusionnée par la nouvelle région dans chaque liste d'adjacence
+                for (int regionIndex = 0; regionIndex < m_regions_adjacency.size(); regionIndex++) {
+                    // Si la région d'adjacence n'a pas été supprimé (-1)
+                    // et que la région d'adjacence contient la région à supprimer
+                    if (m_regions_adjacency[regionIndex].find(-1) == m_regions_adjacency[regionIndex].end()
+                        && m_regions_adjacency[regionIndex].find(neighborRegionIdx) != m_regions_adjacency[regionIndex].end()) {
+                        m_regions_adjacency[regionIndex].erase(neighborRegionIdx);
+                        m_regions_adjacency[regionIndex].insert(regionIdx);
+                    }
+                }
+
+                hasBeenMerged = true;
+            }
+            it++;
+        }
+    }
+}
+
+RegionGrowingAverage::RegionGrowingAverage(OpenCVGrayscaleMat* image) : RegionGrowing(image) {}
+
+void RegionGrowingAverage::segmentation(const float treshold) {
+    //On vérifie bien que les seeds sont placées avant de commencer
+    if (!m_seeds_placed) {
+        return;
+    }
+
+    std::vector<unsigned int> regions_sums;//Va contenir la somme des valeurs des pixels des régions. Utile pour calculer la moyenne
+    std::vector<unsigned int> regions_pixel_count;//Contient le nombre de pixels de chaque région pour calculer la moyenne
+
+    regions_sums.resize(m_seeds_positions.size());
+    regions_pixel_count.resize(m_seeds_positions.size());
+    m_regions_averages.resize(m_seeds_positions.size());
+
+    std::deque<Seed> active_seeds;
+
+    int index = 0;
+    for (const std::pair<unsigned int, unsigned int>& initial_seed_position : m_seeds_positions) {
+        unsigned int x = initial_seed_position.first;
+        unsigned int y = initial_seed_position.second;
+
+        Seed seed(x, y, (*m_image)(y, x), index);
+
+        active_seeds.push_back(seed);
+
+        //Initialisation de la région matrix et des compteurs des régions
+        m_region_matrix[y][x] = seed.region;
+        regions_sums.at(index) = seed.value;
+        regions_pixel_count.at(index) = 1;
+        m_regions_averages.at(index) = seed.value;
+
+        index++;
+    }
+
+    //On va faire grandir les régions tant qu'il y a des seeds
+    while (!active_seeds.empty()) {
+        Seed seed = active_seeds.front();
+        active_seeds.pop_front();
+
+        unsigned int x = seed.position_x;
+        unsigned int y = seed.position_y;
+
+        //Valeur du pixel courant
+        unsigned int current_region = seed.region;
+
+        //Valeurs des pixels au dessus, à gauche, à droite ou en dessous du germe
+        int neighborPixelsValues[4] = {
+            (y >= 1) ? (*m_image)(y - 1, x) : -1,
+            (x >= 1) ? (*m_image)(y, x - 1) : -1,
+            (y < m_image->rows - 1) ? (*m_image)(y + 1, x) : -1,
+            (x < m_image->cols - 1) ? (*m_image)(y, x + 1) : -1
+        };
+
+        //Offsets utilisés pour factoriser le code
+        //Ces offsets correspondent aux décalages que l'on doit appliquer
+        //au pixel de référence pour obtenir, dans l'ordre:
+        //top, left, bottom, right
+        int xOffsets[4] = { 0, -1, 0, 1 };
+        int yOffsets[4] = { -1, 0, 1, 0 };
+
+        for (int offset = 0; offset < 4; offset++) {
+            int xOffset = xOffsets[offset];
+            int yOffset = yOffsets[offset];
+
+            int xNeighbor = x + xOffset;
+            int yNeighbor = y + yOffset;
+
+            float currentRegionAverage = m_regions_averages.at(current_region);
+            int neighborPixelValue = neighborPixelsValues[offset];
+            int neighborSeedRegion = neighborPixelValue == -1 ? -1 : m_region_matrix[yNeighbor][xNeighbor];
+
+            if (neighborPixelValue != -1 && //On a bien un pixel voisin (on est pas en dehors de l'image)
+                std::abs(neighborPixelValue - currentRegionAverage) <= treshold) {//Le pixel satisfait le critère de ressemblance
+
+                if (neighborSeedRegion == -1) { //Le pixel voisin n'a pas encore été visité par un germe
+                    Seed new_seed(xNeighbor, yNeighbor, neighborPixelValue, seed.region);
+
+                    active_seeds.push_back(new_seed);
+                    m_region_matrix[yNeighbor][xNeighbor] = seed.region;
+
+                    //Mise à jour de la moyenne
+                    regions_pixel_count.at(current_region)++;
+                    regions_sums.at(current_region) += neighborPixelValue;
+                    m_regions_averages.at(current_region) = (float)regions_sums.at(current_region) / (float)regions_pixel_count.at(current_region);
+                }
+            }
+
+            if (neighborSeedRegion != seed.region && neighborSeedRegion != -1) { //Le pixel voisin est déjà occupé par un germe et ce n'est pas un germe de notre propre région
+                //Le pixel a déjà été visité, on va ajouter la valeur du germe voisin
+                //à la liste des régions adjacentes de la région actuelle
+                m_regions_adjacency[seed.region].insert(neighborSeedRegion);
+            }
+        }
+    }
+
+    normalizeAdjacency();
+
+    //Initialisation des regions indexes
+    m_new_regions_indexes.clear();
+    m_new_regions_indexes.reserve(m_regions_adjacency.size());
+    for (int i = 0; i < m_regions_adjacency.size(); i++) {
+        m_new_regions_indexes.push_back(i);
+    }
+    m_regions_computed = true;
+}
+
+void RegionGrowingAverage::regionFusion(const float treshold) {
+    // On vérifie bien que les regions sont placées avant de commencer
+    if (!m_regions_computed) {
+        return;
+    }
+
+    m_new_regions_indexes.clear();
+    m_new_regions_indexes.reserve(m_regions_adjacency.size());
+    for (int i = 0; i < m_regions_adjacency.size(); i++) {
+        m_new_regions_indexes.push_back(i);
+    }
+
+    //Pour chaque région
+    for (int region_index = 0; region_index < m_regions_adjacency.size(); region_index++) {
+        //On parcourt les régions adjacentes
+        for (int region_adja_index : m_regions_adjacency.at(region_index)) {
+            if (region_adja_index < region_index) {
+                //Pour ne pas re-merger deux qui auraient déjà été mergées entres elles
+                continue;
+            }
+
+            unsigned int adja_new_index = m_new_regions_indexes.at(region_adja_index);
+            unsigned int current_region_new_index = m_new_regions_indexes.at(region_index);
+
+            //Si la région voisine satisfait le critère de ressemblance avec la région actuelle
+            if (abs(m_regions_averages.at(current_region_new_index) - m_regions_averages.at(adja_new_index)) <= treshold) {
+                //Si on essaye de merge avec une région qui a déjà été mergée
+                if (adja_new_index == current_region_new_index) {
+                    //Ces deux régions sont déjà mergées ensemble
+                    continue;
+                }
+                else if (adja_new_index != region_adja_index) {
+                    unsigned int new_index = current_region_new_index;
+
+                    for (int idx = 0; idx < m_new_regions_indexes.size(); idx++) {
+                        if (m_new_regions_indexes.at(idx) == adja_new_index) {
+                            m_new_regions_indexes.at(idx) = new_index;
+                        }
+                    }
+                }
+
+                //On renumérote la région voisine pour qu'elle soit considérée comme la même région que la région actuelle
+                m_new_regions_indexes.at(region_adja_index) = current_region_new_index;
+            }
+        }
+    }
+}
+
+void RegionGrowingAverage::showSegmentation(const std::string& window_name, const bool show_initials_seeds) {
+    cv::Mat regions_img = cv::Mat::zeros(m_image->rows, m_image->cols, CV_8UC3);
+
+    // Parcourt la matrice des régions et colorie l'image en concéquence
+    for (int i = 0; i < regions_img.rows; i++) {
+        for (int j = 0; j < regions_img.cols; j++) {
+            int region_matrix_val = m_region_matrix[i][j];
+            if (region_matrix_val == -1) {//Partie de l'image qui n'a pas été "capturée" par les germes 
+                //Couleur noire
+                regions_img.at<cv::Vec3b>(i, j)[0] = 0;
+                regions_img.at<cv::Vec3b>(i, j)[1] = 0;
+                regions_img.at<cv::Vec3b>(i, j)[2] = 0;
+
+                continue;
+            }
+
+            //std::cout << "region matrix: " << m_region_matrix[i][j] << " " << m_new_regions_indexes.size() << std::endl;
+            int val = m_new_regions_indexes.at(m_region_matrix[i][j]);
+            if (val < (int)distinct_colors.size()) {
+                regions_img.at<cv::Vec3b>(i, j)[0] = distinct_colors[val][2];
+                regions_img.at<cv::Vec3b>(i, j)[1] = distinct_colors[val][1];
+                regions_img.at<cv::Vec3b>(i, j)[2] = distinct_colors[val][0];
+            }
+            else {
+                int rgb[3];
+                randomRGBColor(rgb);
+                distinct_colors.push_back({ rgb[0], rgb[1], rgb[2] });
+                regions_img.at<cv::Vec3b>(i, j)[0] = rgb[0];
+                regions_img.at<cv::Vec3b>(i, j)[1] = rgb[1];
+                regions_img.at<cv::Vec3b>(i, j)[2] = rgb[2];
+            }
+        }
+    }
+
+    // Affiche les seeds initiaux sous forme de cercle
+    if (show_initials_seeds) {
+        showSeeds(&regions_img);
+    }
+
+    //Resize dans le cas d'une image plus grande que l'écran
+    //cv::Mat resized;
+    //cv::resize(regions_img, resized, cv::Size(1920, 1080), cv::INTER_LINEAR);
+
+    cv::imshow(window_name, regions_img);
 }

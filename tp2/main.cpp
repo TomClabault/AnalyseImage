@@ -4,6 +4,7 @@
 #include <opencv2/highgui.hpp>
 #include "opencv2/imgproc.hpp"
 
+#include "benchmark.hpp"
 #include "regionGrowing.hpp"
 
 #define TEST_IMAGE_WIDTH 10
@@ -25,11 +26,9 @@ int main() {
         for(int j = 0; j < TEST_IMAGE_WIDTH; j++) {
             testImage(i, j) = 0;
         }
-
-        std::cout << std::endl;
     }
 
-    RegionGrowing regionGrowing(&inputImage);
+    RegionGrowingAverage regionGrowing(&inputImage);
 
     std::vector<std::pair<unsigned int, unsigned int>> positionsSimpleImageGrayscale;
     positionsSimpleImageGrayscale.push_back(std::pair<unsigned int, unsigned int>(383, 143));
@@ -45,12 +44,12 @@ int main() {
     positionsSimpleImageGrayscale.push_back(std::pair<unsigned int, unsigned int>(181, 77));
     positionsSimpleImageGrayscale.push_back(std::pair<unsigned int, unsigned int>(96, 71));
 
-    //regionGrowing.blur(7, 1);
+    { Benchmark bench("Blur time"); regionGrowing.blur(5, 1); }
     regionGrowing.placeSeedsManual(positionsSimpleImageGrayscale);
-    //regionGrowing.placeSeedsRandom(12);
-    regionGrowing.segmentationDifference(5);
+    //regionGrowing.placeSeedsRandom(20);
+    { Benchmark bench("Segmentation time"); regionGrowing.segmentation(15); }
     regionGrowing.showSegmentation("Segmentation before fusion", true);
-    regionGrowing.regionFusion(10);
+    regionGrowing.regionFusion(15);
     regionGrowing.showSegmentation("Segmentation after fusion", true);
     regionGrowing.removeNoise(100);
     regionGrowing.showSegmentation("Segmentation after noise removal", true);

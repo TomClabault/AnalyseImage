@@ -19,10 +19,12 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\..\tp2\benchmark.cpp" />
     <ClCompile Include="..\..\..\tp2\main.cpp" />
     <ClCompile Include="..\..\..\tp2\regionGrowing.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\..\tp2\benchmark.hpp" />
     <ClInclude Include="..\..\..\tp2\regionGrowing.hpp" />
   </ItemGroup>
   <PropertyGroup Label="Globals">

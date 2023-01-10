@@ -21,9 +21,15 @@
     <ClCompile Include="..\..\..\tp2\regionGrowing.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\tp2\benchmark.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\tp2\regionGrowing.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\tp2\benchmark.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
