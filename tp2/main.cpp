@@ -28,6 +28,7 @@ int main() {
         }
     }
 
+    /*
     RegionGrowingAverage regionGrowing(&inputImage);
 
     std::vector<std::pair<unsigned int, unsigned int>> positionsSimpleImageGrayscale;
@@ -52,6 +53,35 @@ int main() {
     regionGrowing.regionFusion(15);
     regionGrowing.showSegmentation("Segmentation after fusion", true);
     regionGrowing.removeNoise(100);
+    regionGrowing.showSegmentation("Segmentation after noise removal", true);
+    regionGrowing.showRegionBorders("Bordure des regions", true);
+    cv::waitKey(0);
+    */
+
+    RegionGrowingDifference regionGrowing(&inputImage);
+
+    std::vector<std::pair<unsigned int, unsigned int>> positionsSimpleImageGrayscale;
+    positionsSimpleImageGrayscale.push_back(std::pair<unsigned int, unsigned int>(383, 143));
+    positionsSimpleImageGrayscale.push_back(std::pair<unsigned int, unsigned int>(118, 426));
+    positionsSimpleImageGrayscale.push_back(std::pair<unsigned int, unsigned int>(322, 272));
+    positionsSimpleImageGrayscale.push_back(std::pair<unsigned int, unsigned int>(474, 145));
+    positionsSimpleImageGrayscale.push_back(std::pair<unsigned int, unsigned int>(152, 172));
+    positionsSimpleImageGrayscale.push_back(std::pair<unsigned int, unsigned int>(106, 368));
+    positionsSimpleImageGrayscale.push_back(std::pair<unsigned int, unsigned int>(272, 455));
+    positionsSimpleImageGrayscale.push_back(std::pair<unsigned int, unsigned int>(209, 343));
+    positionsSimpleImageGrayscale.push_back(std::pair<unsigned int, unsigned int>(329, 19));
+    positionsSimpleImageGrayscale.push_back(std::pair<unsigned int, unsigned int>(450, 314));
+    positionsSimpleImageGrayscale.push_back(std::pair<unsigned int, unsigned int>(181, 77));
+    positionsSimpleImageGrayscale.push_back(std::pair<unsigned int, unsigned int>(96, 71));
+
+    //regionGrowing.blur(7, 1);
+    regionGrowing.placeSeedsManual(positionsSimpleImageGrayscale);
+    //regionGrowing.placeSeedsRandom(12);
+    regionGrowing.segmentation(5);
+    regionGrowing.showSegmentation("Segmentation before fusion", true);
+    regionGrowing.regionFusion(10);
+    regionGrowing.showSegmentation("Segmentation after fusion", true);
+    //regionGrowing.removeNoise(100);
     regionGrowing.showSegmentation("Segmentation after noise removal", true);
     regionGrowing.showRegionBorders("Bordure des regions", true);
     cv::waitKey(0);
