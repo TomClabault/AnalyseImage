@@ -13,6 +13,7 @@
 #include <ctime>
 #include <deque>
 #include <fstream>
+#include <functional>
 #include <iostream>
 #include <random> //std::default_random_engine
 
@@ -71,7 +72,7 @@ void RegionGrowing::placeSeedsManual(std::vector<std::pair<unsigned int, unsigne
     }
 }
 
-void RegionGrowing::placeSeedsRandom(const unsigned int nb_seeds) {
+void RegionGrowing::placeSeedsRandom(const unsigned int nb_seeds, bool print_seeds) {
     m_seeds_placed = true;
 
     m_seeds_positions.clear();
@@ -139,10 +140,11 @@ void RegionGrowing::placeSeedsRandom(const unsigned int nb_seeds) {
     }
 
     //Affichage des positions des seeds
-    //for (int i = 0; i < m_seeds_positions.size(); i++) {
-    //    std::cout << "positionsSimpleImageGrayscale.push_back(std::pair<unsigned int, unsigned int>(" << m_seeds_positions.at(i).first << ", " << m_seeds_positions.at(i).second << "));" << std::endl;
-    //    //std::cout << "seed " << i << ": " << m_seeds_positions.at(i).first << ", " << m_seeds_positions.at(i).second << std::endl;
-    //}
+    if (print_seeds) {
+        for (int i = 0; i < m_seeds_positions.size(); i++) {
+            std::cout << "positionsSimpleImageGrayscale.push_back(std::pair<unsigned int, unsigned int>(" << m_seeds_positions.at(i).first << ", " << m_seeds_positions.at(i).second << "));" << std::endl;
+        }
+    }
 
     delete[] cellWidths;
     delete[] cellHeights;
@@ -244,7 +246,7 @@ void RegionGrowing::blurRGB(double** kernel, int kernel_size) {
 }
 
 void RegionGrowing::blur(unsigned int kernel_size, double sigma) {
-    if (kernel_size == 0 || kernel_size % 2) {
+    if (kernel_size == 0 || (kernel_size % 2 == 0)) {
         throw std::invalid_argument("La taille du noyau doit être strictement positive et impaire.");
 
         return;
@@ -358,10 +360,6 @@ void randomRGBColor(int rgb[])
     for(int i = 0; i < 3; i++) {
         rgb[i] = rand() % 256;
     }
-}
-
-float rgb_distance_L1(const cv::Vec3f& rgb1, const cv::Vec3f& rgb2) {
-    return abs(rgb1[0] - rgb2[0]) + abs(rgb1[1] - rgb2[1]) + abs(rgb1[2] - rgb2[2]);
 }
 
 void RegionGrowing::showSegmentation(std::string window_name, bool show_initials_seeds) {
@@ -609,7 +607,7 @@ void RegionGrowingDifference::segmentationGrayscale(const unsigned int treshold)
     m_regions_computed = true;
 }
 
-void RegionGrowingDifference::segmentationRGB(const unsigned int treshold) {
+void RegionGrowingDifference::segmentationRGB(const unsigned int treshold, const std::function<float(cv::Vec3f, cv::Vec3f)>& distance_function) {
     const cv::Vec3i NO_NEIGHBOR(-1, -1, -1);
     std::deque<SeedRGB> active_seeds;
 
@@ -661,7 +659,7 @@ void RegionGrowingDifference::segmentationRGB(const unsigned int treshold) {
             int neighborSeedRegion = neighborPixelValue == NO_NEIGHBOR ? -1 : m_region_matrix[yNeighbor][xNeighbor];
 
             if (neighborPixelValue != NO_NEIGHBOR && //On a bien un pixel voisin (on est pas en dehors de l'image)
-                rgb_distance_L1(neighborPixelValue, current_value) <= treshold) {//Le pixel satisfait le critère de ressemblance
+                distance_function(neighborPixelValue, current_value) <= treshold) {//Le pixel satisfait le critère de ressemblance
 
                 if (neighborSeedRegion == -1) { //Le pixel voisin n'a pas encore été visité par un germe
                     SeedRGB new_seed(xNeighbor, yNeighbor, seed.value, seed.region);
@@ -683,7 +681,7 @@ void RegionGrowingDifference::segmentationRGB(const unsigned int treshold) {
     m_regions_computed = true;
 }
 
-void RegionGrowingDifference::segmentation(const unsigned int treshold) {
+void RegionGrowingDifference::segmentation(const unsigned int treshold, const std::function<float(cv::Vec3f, cv::Vec3f)>& distance_function) {
     //On vérifie bien que les seeds sont placées avant de commencer
     if (!m_seeds_placed) {
         return;
@@ -693,7 +691,7 @@ void RegionGrowingDifference::segmentation(const unsigned int treshold) {
         segmentationGrayscale(treshold);
     }
     else {
-        segmentationRGB(treshold);
+        segmentationRGB(treshold, distance_function);
     }
 }
 
@@ -890,7 +888,7 @@ void RegionGrowingAverage::segmentationGrayscale(const float treshold) {
     m_regions_computed = true;
 }
 
-void RegionGrowingAverage::segmentationRGB(const float treshold) {
+void RegionGrowingAverage::segmentationRGB(const float treshold, const std::function<float(cv::Vec3f, cv::Vec3f)>& distance_function) {
     std::vector<cv::Vec3i> regions_sums;//Va contenir la somme des valeurs des pixels des régions. Utile pour calculer la moyenne
     std::vector<unsigned int> regions_pixel_count;//Contient le nombre de pixels de chaque région pour calculer la moyenne
 
@@ -957,7 +955,7 @@ void RegionGrowingAverage::segmentationRGB(const float treshold) {
             int neighborSeedRegion = neighborPixelValue == NO_NEIGHBOR ? -1 : m_region_matrix[yNeighbor][xNeighbor];
 
             if (neighborPixelValue != NO_NEIGHBOR && //On a bien un pixel voisin (on est pas en dehors de l'image)
-                rgb_distance_L1(neighborPixelValue, currentRegionAverage) <= treshold) {//Le pixel satisfait le critère de ressemblance
+                distance_function(neighborPixelValue, currentRegionAverage) <= treshold) {//Le pixel satisfait le critère de ressemblance
 
                 if (neighborSeedRegion == -1) { //Le pixel voisin n'a pas encore été visité par un germe
                     SeedRGB new_seed(xNeighbor, yNeighbor, neighborPixelValue, seed.region);
@@ -993,7 +991,7 @@ void RegionGrowingAverage::segmentationRGB(const float treshold) {
     m_regions_computed = true;
 }
 
-void RegionGrowingAverage::segmentation(const float treshold) {
+void RegionGrowingAverage::segmentation(const float treshold, const std::function<float(cv::Vec3f, cv::Vec3f)>& distance_function) {
     //On vérifie bien que les seeds sont placées avant de commencer
     if (!m_seeds_placed) {
         return;
@@ -1003,7 +1001,7 @@ void RegionGrowingAverage::segmentation(const float treshold) {
         segmentationGrayscale(treshold);
     }
     else {
-        segmentationRGB(treshold);
+        segmentationRGB(treshold, distance_function);
     }
 }
 

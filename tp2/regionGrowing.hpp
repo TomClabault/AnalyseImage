@@ -1,4 +1,5 @@
 #include <algorithm>
+#include <functional>
 #include <unordered_set>
 #include <opencv2/core.hpp>
 #include <opencv2/imgcodecs.hpp>
@@ -11,6 +12,22 @@ typedef cv::Mat_<unsigned char> OpenCVGrayscaleMat;
 
 class RegionGrowing {
 public:
+    static float rgb_distance_L1(const cv::Vec3f& rgb1, const cv::Vec3f& rgb2) {
+        return abs(rgb1[0] - rgb2[0]) + abs(rgb1[1] - rgb2[1]) + abs(rgb1[2] - rgb2[2]);
+    }
+
+    static float rgb_distance_L2(const cv::Vec3f& rgb1, const cv::Vec3f& rgb2) {
+        float r = (rgb1[0] - rgb2[0]);
+        float g = (rgb1[1] - rgb2[1]);
+        float b = (rgb1[2] - rgb2[2]);
+
+        return std::sqrtf(r * r + g * g + b * b);
+    }
+
+    static float rgb_distance_LInfinity(const cv::Vec3f& rgb1, const cv::Vec3f& rgb2) {
+        return std::max(std::max(abs(rgb1[0] - rgb2[0]), abs(rgb1[1] - rgb2[1])), abs(rgb1[2] - rgb2[2]));
+    }
+
     struct Seed {
         Seed(unsigned int x, unsigned int y, int val, int region_number) : position_x(x), position_y(y), value(val), region(region_number) {}
 
@@ -47,7 +64,7 @@ public:
      * 
      * @param nb_seeds Le nombre de germe qui sera placé dans l'image
      */
-    void placeSeedsRandom(const unsigned int nb_seeds_per_row);
+    void placeSeedsRandom(const unsigned int nb_seeds_per_row, bool print_seeds=false);
 
     /**
      * Floute l'image dans le but d'éliminer le bruit afin de rendre la segmentation plus efficace 
@@ -175,8 +192,13 @@ public:
 
     /**
      * Lance la segmentation de l'image en RGB. Voir doc de 'segmentation'
+     * 
+     * @param distance_function Fonction qui prend en paramètre deux pixels RGB représentés par des cv::Vec3f.
+     * Cette fonction doit retourner la distance entre les deux pixels. C'est cette distance qui sera comparée au @param treshold
+     * pour déterminer si oui ou non le pixel doit être admis dans la région qui est en train
+     * de s'étendre
      */
-    void segmentationRGB(const unsigned int treshold);
+    void segmentationRGB(const unsigned int treshold, const std::function<float(cv::Vec3f, cv::Vec3f)>& distance_function);
 
     /**
      * Lance la segmentation de l'image (grossissement des germes).
@@ -184,8 +206,15 @@ public:
      * ou non un germe doit grossir sur un pixel adjacent ou non.
      * Si la différence de valeur entre les deux pixels est inférieure ou égale
      * au treshold, le pixel sera pris en compte
+     * 
+     * @param distance_function Fonction qui prend en paramètre deux pixels RGB représentés par des cv::Vec3f.
+     * Cette fonction doit retourner la distance entre les deux pixels. C'est cette distance qui sera comparée au @param treshold
+     * pour déterminer si oui ou non le pixel doit être admis dans la région qui est en train
+     * de s'étendre.
+     * Cette fonctio n'est utilisée que dans le cas où une image RGB a été donnée au constructeur
+     * de l'instance de RegionGrowingDifference
      */
-    void segmentation(const unsigned int treshold);
+    void segmentation(const unsigned int treshold, const std::function<float(cv::Vec3f, cv::Vec3f)>& distance_function);
 
     /**
      * Fusione les régions similaires et adjacentes selon le treshold donné
@@ -212,8 +241,16 @@ public:
 
     /**
      * Segmentation d'une image en RGB
+     * 
+     * @param treshold Le seuil à partir duquel un pixel est considéré "compatible" avec un
+     * autre et sera donc pris en compte pendant l'expansion d'une région
+     * 
+     * @param distance_function Fonction qui prend en paramètre deux pixels RGB représentés par des cv::Vec3f.
+     * Cette fonction doit retourner la distance entre les deux pixels. C'est cette distance qui sera comparée au @param treshold
+     * pour déterminer si oui ou non le pixel doit être admis dans la région qui est en train
+     * de s'étendre
      */
-    void segmentationRGB(const float treshold);
+    void segmentationRGB(const float treshold, const std::function<float(cv::Vec3f, cv::Vec3f)>& distance_function);
 
     /**
      * Lacement la segmentation de l'image
@@ -223,8 +260,15 @@ public:
      *
      * @param treshold Valeur seuil pour l'admission d'un nouveau pixel lors de la
      * comparaison de sa valeur avec la valeur moyenne de la région
+     * 
+     * @param distance_function Fonction qui prend en paramètre deux pixels RGB représentés par des cv::Vec3f.
+     * Cette fonction doit retourner la distance entre les deux pixels. C'est cette distance qui sera comparée au @param treshold
+     * pour déterminer si oui ou non le pixel doit être admis dans la région qui est en train
+     * de s'étendre.
+     * Cette fonctio n'est utilisée que dans le cas où une image RGB a été donnée au constructeur
+     * de l'instance de RegionGrowingAverage
      */
-    void segmentation(const float treshold);
+    void segmentation(const float treshold, const std::function<float(cv::Vec3f, cv::Vec3f)>& distance_function);
 
     /**
      * Fusione les régions similaires et adjacentes selon le treshold donné

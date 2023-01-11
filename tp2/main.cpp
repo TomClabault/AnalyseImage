@@ -82,25 +82,37 @@ int main() {
     RegionGrowingDifference regionGrowing(&inputImage);
 
     std::vector<std::pair<unsigned int, unsigned int>> positionsSimpleImageGrayscale;
-    positionsSimpleImageGrayscale.push_back(std::pair<unsigned int, unsigned int>(383, 143));
-    positionsSimpleImageGrayscale.push_back(std::pair<unsigned int, unsigned int>(118, 426));
-    positionsSimpleImageGrayscale.push_back(std::pair<unsigned int, unsigned int>(322, 272));
-    positionsSimpleImageGrayscale.push_back(std::pair<unsigned int, unsigned int>(474, 145));
-    positionsSimpleImageGrayscale.push_back(std::pair<unsigned int, unsigned int>(152, 172));
-    positionsSimpleImageGrayscale.push_back(std::pair<unsigned int, unsigned int>(106, 368));
-    positionsSimpleImageGrayscale.push_back(std::pair<unsigned int, unsigned int>(272, 455));
-    positionsSimpleImageGrayscale.push_back(std::pair<unsigned int, unsigned int>(209, 343));
-    positionsSimpleImageGrayscale.push_back(std::pair<unsigned int, unsigned int>(329, 19));
-    positionsSimpleImageGrayscale.push_back(std::pair<unsigned int, unsigned int>(450, 314));
-    positionsSimpleImageGrayscale.push_back(std::pair<unsigned int, unsigned int>(181, 77));
-    positionsSimpleImageGrayscale.push_back(std::pair<unsigned int, unsigned int>(96, 71));
+    positionsSimpleImageGrayscale.push_back(std::pair<unsigned int, unsigned int>(72, 428));
+    positionsSimpleImageGrayscale.push_back(std::pair<unsigned int, unsigned int>(467, 242));
+    positionsSimpleImageGrayscale.push_back(std::pair<unsigned int, unsigned int>(83, 348));
+    positionsSimpleImageGrayscale.push_back(std::pair<unsigned int, unsigned int>(379, 242));
+    positionsSimpleImageGrayscale.push_back(std::pair<unsigned int, unsigned int>(205, 489));
+    positionsSimpleImageGrayscale.push_back(std::pair<unsigned int, unsigned int>(56, 61));
+    positionsSimpleImageGrayscale.push_back(std::pair<unsigned int, unsigned int>(369, 438));
+    positionsSimpleImageGrayscale.push_back(std::pair<unsigned int, unsigned int>(145, 94));
+    positionsSimpleImageGrayscale.push_back(std::pair<unsigned int, unsigned int>(452, 119));
+    positionsSimpleImageGrayscale.push_back(std::pair<unsigned int, unsigned int>(269, 405));
+    positionsSimpleImageGrayscale.push_back(std::pair<unsigned int, unsigned int>(497, 474));
+    positionsSimpleImageGrayscale.push_back(std::pair<unsigned int, unsigned int>(185, 157));
+    positionsSimpleImageGrayscale.push_back(std::pair<unsigned int, unsigned int>(482, 368));
+    positionsSimpleImageGrayscale.push_back(std::pair<unsigned int, unsigned int>(470, 89));
+    positionsSimpleImageGrayscale.push_back(std::pair<unsigned int, unsigned int>(282, 466));
+    positionsSimpleImageGrayscale.push_back(std::pair<unsigned int, unsigned int>(23, 135));
+    positionsSimpleImageGrayscale.push_back(std::pair<unsigned int, unsigned int>(156, 218));
+    positionsSimpleImageGrayscale.push_back(std::pair<unsigned int, unsigned int>(379, 78));
+    positionsSimpleImageGrayscale.push_back(std::pair<unsigned int, unsigned int>(274, 236));
+    positionsSimpleImageGrayscale.push_back(std::pair<unsigned int, unsigned int>(371, 157));
+    positionsSimpleImageGrayscale.push_back(std::pair<unsigned int, unsigned int>(402, 387));
+    positionsSimpleImageGrayscale.push_back(std::pair<unsigned int, unsigned int>(236, 8));
+    positionsSimpleImageGrayscale.push_back(std::pair<unsigned int, unsigned int>(93, 257));
+    positionsSimpleImageGrayscale.push_back(std::pair<unsigned int, unsigned int>(204, 336));
 
-    { Benchmark benchmark("Blur time"); regionGrowing.blur(7, 1); }
-    //regionGrowing.placeSeedsManual(positionsSimpleImageGrayscale);
-    regionGrowing.placeSeedsRandom(24);
-    { Benchmark benchmark("Segmentation time"); regionGrowing.segmentation(45); }
+    { Benchmark benchmark("Blur time"); regionGrowing.blur(7, 3.5); }
+    regionGrowing.placeSeedsManual(positionsSimpleImageGrayscale);
+    //regionGrowing.placeSeedsRandom(24, true);
+    { Benchmark benchmark("Segmentation time"); regionGrowing.segmentation(30, RegionGrowing::rgb_distance_LInfinity); }
     regionGrowing.showSegmentation("Segmentation before fusion", true);
-    { Benchmark benchmark("Region fusion time"); regionGrowing.regionFusion(45); }
+    { Benchmark benchmark("Region fusion time"); regionGrowing.regionFusion(30); }
     regionGrowing.showSegmentation("Segmentation after fusion", true);
     //regionGrowing.removeNoise(100);
     regionGrowing.showSegmentation("Segmentation after noise removal", true);
