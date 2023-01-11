@@ -214,7 +214,7 @@ public:
      * Cette fonctio n'est utilisée que dans le cas où une image RGB a été donnée au constructeur
      * de l'instance de RegionGrowingDifference
      */
-    void segmentation(const unsigned int treshold, const std::function<float(cv::Vec3f, cv::Vec3f)>& distance_function);
+    void segmentation(const unsigned int treshold, const std::function<float(cv::Vec3f, cv::Vec3f)>& distance_function = RegionGrowing::rgb_distance_L2);
 
     /**
      * Fusione les régions similaires et adjacentes selon le treshold donné
@@ -268,7 +268,7 @@ public:
      * Cette fonctio n'est utilisée que dans le cas où une image RGB a été donnée au constructeur
      * de l'instance de RegionGrowingAverage
      */
-    void segmentation(const float treshold, const std::function<float(cv::Vec3f, cv::Vec3f)>& distance_function);
+    void segmentation(const float treshold, const std::function<float(cv::Vec3f, cv::Vec3f)>& distance_function = RegionGrowing::rgb_distance_L2);
 
     /**
      * Fusione les régions similaires et adjacentes selon le treshold donné
