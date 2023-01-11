@@ -396,7 +396,7 @@ void RegionGrowing::showSegmentation(std::string window_name, bool show_initials
 
     // Affiche les seeds initiaux sous forme de cercle
     if (show_initials_seeds) {
-        showSeeds(&regions_img);
+        showSeeds(&regions_img, cv::Scalar(255, 255, 255));
     }
 
     //Resize dans le cas d'une image plus grande que l'écran
@@ -1015,14 +1015,6 @@ void RegionGrowingAverage::segmentation(const float treshold) {
     }
 }
 
-bool compareRegionsGrayscale(const float average_region1, const float average_region2, const float treshold) {
-    return abs(average_region1 - average_region2) <= treshold;
-}
-
-bool compareRegionsRGB(const cv::Vec3f& average_region1, const cv::Vec3f& average_region2, const float treshold) {
-    return rgb_distance_L1(average_region1, average_region2) <= treshold;
-}
-
 void RegionGrowingAverage::regionFusion(const float treshold) {
     // On vérifie bien que les regions sont placées avant de commencer
     if (!m_regions_computed) {
@@ -1049,10 +1041,16 @@ void RegionGrowingAverage::regionFusion(const float treshold) {
 
             bool similar_regions = false;
             if (m_image_rgb == nullptr) {
-                similar_regions = compareRegionsGrayscale(m_regions_averages.at(current_region_new_index), m_regions_averages.at(adja_new_index), treshold);
+                float average_region1 = m_regions_averages.at(current_region_new_index);
+                float average_region2 = m_regions_averages.at(adja_new_index);
+
+                similar_regions = abs(average_region1 - average_region2) <= treshold;
             }
             else {
-                similar_regions = compareRegionsRGB(m_regions_averages_rgb.at(current_region_new_index), m_regions_averages_rgb.at(adja_new_index), treshold);
+                cv::Vec3f average_region1 = m_regions_averages_rgb.at(current_region_new_index);
+                cv::Vec3f average_region2 = m_regions_averages_rgb.at(adja_new_index);
+
+                similar_regions = rgb_distance_L1(average_region1, average_region2) <= treshold; 
             }
 
             //Si la région voisine satisfait le critère de ressemblance avec la région actuelle
@@ -1122,7 +1120,7 @@ void RegionGrowingAverage::showSegmentation(const std::string& window_name, cons
 
     // Affiche les seeds initiaux sous forme de cercle
     if (show_initials_seeds) {
-        showSeeds(&regions_img);
+        showSeeds(&regions_img, cv::Scalar(255, 255, 255));
     }
 
     //Resize dans le cas d'une image plus grande que l'écran
