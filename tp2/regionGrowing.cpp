@@ -337,8 +337,15 @@ void RegionGrowing::removeNoise(const unsigned int nbPixels) {
     // On remplace la région par un de ses voisins dans la matrice des régions
     for (int regionIdx = 0; regionIdx < regions_pixels_count.size(); regionIdx++) {
         if (regions_pixels_count[regionIdx] < nbPixels) {
-            // On remplace la région par un de ses voisins dans la matrice des régions
-            int newRegion = *(m_regions_adjacency[regionIdx].begin());
+            int newRegion;
+            if (!m_regions_adjacency[regionIdx].empty()) {
+                // On remplace la région par un de ses voisins dans la matrice des régions
+                newRegion = *(m_regions_adjacency[regionIdx].begin());
+            }
+            else {
+                // Si la région n'a pas de voisins on supprime la région en mettant -1
+                newRegion = -1;
+            }
 
             for (unsigned int y = 0; y < m_rows; y++) {
                 for (unsigned int x = 0; x < m_cols; x++) {
