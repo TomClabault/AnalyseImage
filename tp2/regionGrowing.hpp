@@ -21,8 +21,15 @@ public:
         int region;//Le numero de la region à laquelle appartient la seed
     };
 
-    RegionGrowing(OpenCVGrayscaleMat* image);
-    ~RegionGrowing();
+    struct SeedRGB {
+        SeedRGB(unsigned int x, unsigned int y, cv::Vec3b val, int region_number) : position_x(x), position_y(y), value(val), region(region_number) {}
+
+        unsigned int position_x;
+        unsigned int position_y;
+
+        cv::Vec3b value;//La valeur de la seed
+        int region;//Le numero de la region à laquelle appartient la seed
+    };
 
     /**
      * Positionne les germes manuellement à partir de la liste des positions des germes
@@ -49,6 +56,16 @@ public:
      * @param sigma Le paramètre sigma du noyau gaussien
      */
     void blur(unsigned int kernel_size, double sigma);
+
+    /*
+     * Floute l'image en niveaux de gris. Voir doc de 'blur'
+     */
+    void blurGrayscale(double** kernel, int kernel_size);
+
+    /*
+     * Floute l'image en RGB. Voir doc de 'blur'
+     */
+    void blurRGB(double** kernel, int kernel_size);
 
     /**
      * S'assure que les listes d'adjacence de deux régions adjacentes se contiennent bien l'une
@@ -100,10 +117,18 @@ public:
     void showSeeds(cv::Mat* image, cv::Scalar color = cv::Scalar(0, 0, 0));
 
 protected:
+    void init_region_matrix(cv::Mat* image);
+
+    RegionGrowing(OpenCVGrayscaleMat* image);
+    RegionGrowing(cv::Mat* image);
+
+    ~RegionGrowing();
+
     bool m_seeds_placed;
     bool m_regions_computed;
 
-    OpenCVGrayscaleMat* m_image;
+    OpenCVGrayscaleMat* m_image = nullptr;
+    cv::Mat* m_image_rgb = nullptr;
 
     int** m_region_matrix;
     int m_nb_regions; //Nombre de régions / germes placés
@@ -131,7 +156,15 @@ protected:
 
 class RegionGrowingDifference : public RegionGrowing {
 public:
+    /*
+     * Grayscale constructor
+     */
     RegionGrowingDifference(OpenCVGrayscaleMat* image);
+
+    /*
+     * RGB constructor
+     */
+    RegionGrowingDifference(cv::Mat* image);
 
     /**
      * Lance la segmentation de l'image (grossissement des germes).
@@ -150,7 +183,25 @@ public:
 
 class RegionGrowingAverage : public RegionGrowing {
 public:
+    /*
+     * Grayscale constructor
+     */
     RegionGrowingAverage(OpenCVGrayscaleMat* image);
+
+    /*
+     * RGB constructor
+     */
+    RegionGrowingAverage(cv::Mat* image);
+
+    /**
+     * Segmentation d'une image en niveau de gris
+     */
+    void segmentationGrayscale(const float treshold);
+
+    /**
+     * Segmentation d'une image en RGB
+     */
+    void segmentationRGB(const float treshold);
 
     /**
      * Lacement la segmentation de l'image
@@ -177,8 +228,14 @@ public:
 protected:
     /**
      * Va stocker la valeur moyenne des pixels des régions calculées pendant la segmentation de l'image
+     * grayscale
      */
     std::vector<float> m_regions_averages;
+
+    /*
+     * Idem pour le RGB
+     */
+    std::vector<cv::Vec3f> m_regions_averages_rgb;
 
     /**
      * Nouveaux indices des régions après fusion: certaines régions vont prendre le même indice de région
