@@ -36,18 +36,22 @@ void RegionGrowing::init_region_matrix(cv::Mat* image) {
 
 RegionGrowing::RegionGrowing(OpenCVGrayscaleMat* image) {
     m_image = image;
+    m_rows = m_image->rows;
+    m_cols = m_image->cols;
 
     init_region_matrix(m_image);
 }
 
 RegionGrowing::RegionGrowing(cv::Mat* image) {
     m_image_rgb = image;
+    m_rows = m_image_rgb->rows;
+    m_cols = m_image_rgb->cols;
 
     init_region_matrix(m_image_rgb);
 }
 
 RegionGrowing::~RegionGrowing() {
-    for (int row = 0; row < m_image->rows; row++)
+    for (int row = 0; row < m_rows; row++)
         delete [] m_region_matrix[row];
 
     delete [] m_region_matrix;
@@ -93,11 +97,8 @@ void RegionGrowing::placeSeedsRandom(const unsigned int nb_seeds) {
 
     //On commence par remplir grossièrement le tableau et on ajustera après
     //pour tenir compte des tailles de cellules différentes
-    unsigned int rows = m_image_rgb == nullptr ? m_image->rows : m_image_rgb->rows;
-    unsigned int cols = m_image_rgb == nullptr ? m_image->cols : m_image_rgb->cols;
-
-    unsigned int baseCellHeight = rows / nbCellsPerRow;
-    unsigned int baseCellWidth = cols / nbCellsPerRow;
+    unsigned int baseCellHeight = m_rows / nbCellsPerRow;
+    unsigned int baseCellWidth = m_cols / nbCellsPerRow;
     for (int i = 0; i < nbCellsPerRow; i++) {
         cellWidths[i] = baseCellWidth;
         cellHeights[i] = baseCellHeight;
@@ -106,13 +107,13 @@ void RegionGrowing::placeSeedsRandom(const unsigned int nb_seeds) {
     //On va élargir de 1 pixel toutes les cellules qui en ont besoin pour arriver à la taille de l'image
     //si jamais on avait jusque là des pixels qui n'étaient pas pris en compte
     //(les pixels tout à droite de l'image si on parle de la largeur)
-    const unsigned int widthRemainder = cols % cellWidths[0];
+    const unsigned int widthRemainder = m_cols % cellWidths[0];
     for (int i = 0; i < widthRemainder; i++) {
         cellWidths[i]++;
     }
 
     //Même chose pour la hauteur
-    const unsigned int heightRemainder = rows % cellHeights[0];
+    const unsigned int heightRemainder = m_rows % cellHeights[0];
     for (int i = 0; i < heightRemainder; i++) {
         cellHeights[i]++;
     }
@@ -173,8 +174,8 @@ void compute_gaussian_kernel(double** kernel, unsigned int kernel_size, double s
 void RegionGrowing::blurGrayscale(double** kernel, int kernel_size) {
     int half_kernel_size = kernel_size / 2;
 
-    for (int y_img = 0; y_img < m_image->rows; y_img++) {
-        for (int x_img = 0; x_img < m_image->cols; x_img++) {
+    for (int y_img = 0; y_img < m_rows; y_img++) {
+        for (int x_img = 0; x_img < m_cols; x_img++) {
             unsigned char current_pixel_value = (*m_image)(y_img, x_img);
 
             double new_pixel_value = 0;
@@ -189,7 +190,7 @@ void RegionGrowing::blurGrayscale(double** kernel, int kernel_size) {
                     unsigned char pixel_value;
 
                     //Si on est en train de dépasser des bords de l'image
-                    if (y_pos < 0 || y_pos >= m_image->rows || x_pos < 0 || x_pos >= m_image->cols) {
+                    if (y_pos < 0 || y_pos >= m_rows || x_pos < 0 || x_pos >= m_cols) {
                         //On va considérer que la valeur du pixel est la même que celle du pixel courant
                         pixel_value = current_pixel_value;
                     }
@@ -209,8 +210,8 @@ void RegionGrowing::blurGrayscale(double** kernel, int kernel_size) {
 void RegionGrowing::blurRGB(double** kernel, int kernel_size) {
     int half_kernel_size = kernel_size / 2;
 
-    for (int y_img = 0; y_img < m_image_rgb->rows; y_img++) {
-        for (int x_img = 0; x_img < m_image_rgb->cols; x_img++) {
+    for (int y_img = 0; y_img < m_rows; y_img++) {
+        for (int x_img = 0; x_img < m_cols; x_img++) {
             cv::Vec3b current_pixel_value = m_image_rgb->at<cv::Vec3b>(y_img, x_img);
 
             cv::Vec3f new_pixel_value = 0;
@@ -225,7 +226,7 @@ void RegionGrowing::blurRGB(double** kernel, int kernel_size) {
                     cv::Vec3b pixel_value;
 
                     //Si on est en train de dépasser des bords de l'image
-                    if (y_pos < 0 || y_pos >= m_image_rgb->rows || x_pos < 0 || x_pos >= m_image_rgb->cols) {
+                    if (y_pos < 0 || y_pos >= m_rows|| x_pos < 0 || x_pos >= m_cols) {
                         //On va considérer que la valeur du pixel est la même que celle du pixel courant
                         pixel_value = current_pixel_value;
                     }
@@ -285,21 +286,18 @@ bool RegionGrowing::isRegionAdjacent(int regionAValue, int regionBValue) {
 
 bool RegionGrowing::is_pixel_on_border(int pixel_value, unsigned int y_pixel, unsigned int x_pixel) {
     //Si le pixel est en bordure de l'image elle même
-    unsigned int rows = m_image_rgb == nullptr ? m_image->rows : m_image_rgb->rows;
-    unsigned int cols = m_image_rgb == nullptr ? m_image->cols : m_image_rgb->cols;
-
-    if (y_pixel == 0 || y_pixel == rows - 1 || x_pixel == 0 || x_pixel == cols - 1) {
+    if (y_pixel == 0 || y_pixel == m_rows - 1 || x_pixel == 0 || x_pixel == m_cols - 1) {
         return true;
     }
 
     //Pixel au dessus
     if (y_pixel > 0 && m_region_matrix[y_pixel - 1][x_pixel] != pixel_value) {
         return true;
-    } else if (y_pixel < rows - 1 && m_region_matrix[y_pixel + 1][x_pixel] != pixel_value) {//Pixel en dessous
+    } else if (y_pixel < m_rows - 1 && m_region_matrix[y_pixel + 1][x_pixel] != pixel_value) {//Pixel en dessous
         return true;
     } else if (x_pixel > 0 && m_region_matrix[y_pixel][x_pixel - 1] != pixel_value) {//Pixel à gauche
         return true;
-    } else if (x_pixel < cols - 1 && m_region_matrix[y_pixel][x_pixel + 1] != pixel_value) {//Pixel à droite
+    } else if (x_pixel < m_cols - 1 && m_region_matrix[y_pixel][x_pixel + 1] != pixel_value) {//Pixel à droite
         return true;
     }
 
@@ -315,11 +313,8 @@ void RegionGrowing::removeNoise(const unsigned int nbPixels) {
     // On compte les pixels de chaque zones de la matrice en parcourant la matrice des régions
     std::vector<unsigned int> regions_pixels_count(m_regions_adjacency.size(), 0);
     
-    unsigned int rows = m_image_rgb == nullptr ? m_image->rows : m_image_rgb->rows;
-    unsigned int cols = m_image_rgb == nullptr ? m_image->cols : m_image_rgb->cols;
-
-    for (int y = 0; y < rows; y++) {
-        for (int x = 0; x < cols; x++) {
+    for (int y = 0; y < m_rows; y++) {
+        for (int x = 0; x < m_cols; x++) {
             int regionIdx = m_region_matrix[y][x];
             if (regionIdx != -1)
                 regions_pixels_count[regionIdx]++;
@@ -337,8 +332,8 @@ void RegionGrowing::removeNoise(const unsigned int nbPixels) {
             // On remplace la région par un de ses voisins dans la matrice des régions
             int newRegion = *(m_regions_adjacency[regionIdx].begin());
 
-            for (int y = 0; y < rows; y++) {
-                for (int x = 0; x < cols; x++) {
+            for (int y = 0; y < m_rows; y++) {
+                for (int x = 0; x < m_cols; x++) {
                     if (m_region_matrix[y][x] == regionIdx) {
                         m_region_matrix[y][x] = newRegion;
                     }
@@ -364,10 +359,7 @@ float rgb_distance_L1(const cv::Vec3f& rgb1, const cv::Vec3f& rgb2) {
 }
 
 void RegionGrowing::showSegmentation(std::string window_name, bool show_initials_seeds) {
-    unsigned int rows = m_image_rgb == nullptr ? m_image->rows : m_image_rgb->rows;
-    unsigned int cols = m_image_rgb == nullptr ? m_image->cols : m_image_rgb->cols;
-
-    cv::Mat regions_img = cv::Mat::zeros(rows, cols, CV_8UC3);
+    cv::Mat regions_img = cv::Mat::zeros(m_rows, m_cols, CV_8UC3);
 
     // Parcourt la matrice des régions et colorie l'image en concéquence
     for (int i = 0; i < regions_img.rows; i++) {
@@ -441,17 +433,14 @@ void RegionGrowing::showSeeds(cv::Mat* image, cv::Scalar color) {
 }
 
 void RegionGrowing::showRegionBorders(std::string window_name, bool show_initial_seeds) {
-    unsigned int rows = m_image_rgb == nullptr ? m_image->rows : m_image_rgb->rows;
-    unsigned int cols = m_image_rgb == nullptr ? m_image->cols : m_image_rgb->cols;
-
-    cv::Mat borders_img = cv::Mat::zeros(rows, cols, CV_8UC3);
+    cv::Mat borders_img = cv::Mat::zeros(m_rows, m_cols, CV_8UC3);
 
     //On va parcourir chaque pixel de l'image segmetnée et regarder les voisins de ce pixel
     //si un des voisins du pixel n'a pas la même valeur que lui, cela veut dire que le pixel
     //est en bordure de sa région et on va donc le colorer d'une certaine couleur dans l'image
     //qui montrera les bordures de région
-    for (int i = 0; i < rows; i++) {
-        for (int j = 0; j < cols; j++) {
+    for (int i = 0; i < m_rows; i++) {
+        for (int j = 0; j < m_cols; j++) {
             int pixel_value = m_region_matrix[i][j];
 
             if (pixel_value == -1) {//Partie de l'image qui n'a pas été "capturée" par les germes
@@ -491,9 +480,9 @@ void RegionGrowing::showRegionBorders(std::string window_name, bool show_initial
 }
 
 void RegionGrowing::printRegionMatrix() {
-    for(int i = 0; i < m_image->rows; i++) {
+    for(int i = 0; i < m_rows; i++) {
         std::cout << "[";
-        for(int j = 0; j < m_image->cols; j++) {
+        for(int j = 0; j < m_cols; j++) {
             int val = m_region_matrix[i][j];
             if (val == -1)
                 std::cout << "-, ";
@@ -508,9 +497,9 @@ void RegionGrowing::printRegionMatrixToFile(const std::string filename) {
     std::ofstream outputFile;
     outputFile.open(filename);
 
-    for (int i = 0; i < m_image->rows; i++) {
+    for (int i = 0; i < m_rows; i++) {
         outputFile << "[";
-        for (int j = 0; j < m_image->cols; j++) {
+        for (int j = 0; j < m_cols; j++) {
             int val = m_region_matrix[i][j];
             if (val == -1)
                 outputFile << "-, ";
@@ -570,8 +559,8 @@ void RegionGrowingDifference::segmentationGrayscale(const unsigned int treshold)
         int neighborPixelsValues[4] = {
             (y >= 1) ? (*m_image)(y - 1, x) : -1,
             (x >= 1) ? (*m_image)(y, x - 1) : -1,
-            (y < m_image->rows - 1) ? (*m_image)(y + 1, x) : -1,
-            (x < m_image->cols - 1) ? (*m_image)(y, x + 1) : -1
+            (y < m_rows - 1) ? (*m_image)(y + 1, x) : -1,
+            (x < m_cols - 1) ? (*m_image)(y, x + 1) : -1
         };
 
         //Offsets utilisés pour factoriser le code
@@ -644,8 +633,8 @@ void RegionGrowingDifference::segmentationRGB(const unsigned int treshold) {
         cv::Vec3i neighborPixelsValues[4] = {
             (y >= 1) ? (cv::Vec3i)m_image_rgb->at<cv::Vec3b>(y - 1, x) : NO_NEIGHBOR,
             (x >= 1) ? (cv::Vec3i)m_image_rgb->at<cv::Vec3b>(y, x - 1) : NO_NEIGHBOR,
-            (y < m_image_rgb->rows - 1) ? (cv::Vec3i)m_image_rgb->at<cv::Vec3b>(y + 1, x) : NO_NEIGHBOR,
-            (x < m_image_rgb->cols - 1) ? (cv::Vec3i)m_image_rgb->at<cv::Vec3b>(y, x + 1) : NO_NEIGHBOR
+            (y < m_rows- 1) ? (cv::Vec3i)m_image_rgb->at<cv::Vec3b>(y + 1, x) : NO_NEIGHBOR,
+            (x < m_cols - 1) ? (cv::Vec3i)m_image_rgb->at<cv::Vec3b>(y, x + 1) : NO_NEIGHBOR
         };
 
         //Offsets utilisés pour factoriser le code
@@ -715,9 +704,6 @@ void RegionGrowingDifference::regionFusion(const unsigned int treshold) {
         active_regions_idx.push_back(regionIndex);
     }
 
-    unsigned int rows = m_image_rgb == nullptr ? m_image->rows : m_image_rgb->rows;
-    unsigned int cols = m_image_rgb == nullptr ? m_image->cols : m_image_rgb->cols;
-
     // On va fusionner les régions tant qu'il y a des régions dans la file
     while (!active_regions_idx.empty()) {
         int regionIdx = active_regions_idx.front();
@@ -756,8 +742,8 @@ void RegionGrowingDifference::regionFusion(const unsigned int treshold) {
                 m_regions_adjacency[regionIdx].erase(regionIdx);
 
                 // On fusionne les régions dans la matrice
-                for (int y = 0; y < rows; y++) {
-                    for (int x = 0; x < cols; x++) {
+                for (int y = 0; y < m_rows; y++) {
+                    for (int x = 0; x < m_cols; x++) {
                         if (m_region_matrix[y][x] == neighborRegionIdx) {
                             m_region_matrix[y][x] = regionIdx;
                         }
@@ -841,8 +827,8 @@ void RegionGrowingAverage::segmentationGrayscale(const float treshold) {
         int neighborPixelsValues[4] = {
             (y >= 1) ? (*m_image)(y - 1, x) : -1,
             (x >= 1) ? (*m_image)(y, x - 1) : -1,
-            (y < m_image->rows - 1) ? (*m_image)(y + 1, x) : -1,
-            (x < m_image->cols - 1) ? (*m_image)(y, x + 1) : -1
+            (y < m_rows - 1) ? (*m_image)(y + 1, x) : -1,
+            (x < m_cols - 1) ? (*m_image)(y, x + 1) : -1
         };
 
         //Offsets utilisés pour factoriser le code
@@ -942,8 +928,8 @@ void RegionGrowingAverage::segmentationRGB(const float treshold) {
         cv::Vec3i neighborPixelsValues[4] = {
             (y >= 1) ? (cv::Vec3i)m_image_rgb->at<cv::Vec3b>(y - 1, x) : NO_NEIGHBOR,
             (x >= 1) ? (cv::Vec3i)m_image_rgb->at<cv::Vec3b>(y, x - 1) : NO_NEIGHBOR,
-            (y < m_image_rgb->rows - 1) ? (cv::Vec3i)m_image_rgb->at<cv::Vec3b>(y + 1, x) : NO_NEIGHBOR,
-            (x < m_image_rgb->cols - 1) ? (cv::Vec3i)m_image_rgb->at<cv::Vec3b>(y, x + 1) : NO_NEIGHBOR,
+            (y < m_rows- 1) ? (cv::Vec3i)m_image_rgb->at<cv::Vec3b>(y + 1, x) : NO_NEIGHBOR,
+            (x < m_cols - 1) ? (cv::Vec3i)m_image_rgb->at<cv::Vec3b>(y, x + 1) : NO_NEIGHBOR,
         };
 
         //Offsets utilisés pour factoriser le code
@@ -1081,10 +1067,10 @@ void RegionGrowingAverage::showSegmentation(const std::string& window_name, cons
     cv::Mat regions_img;
 
     if (m_image_rgb == nullptr) {
-        regions_img = cv::Mat::zeros(m_image->rows, m_image->cols, CV_8UC3);
+        regions_img = cv::Mat::zeros(m_rows, m_cols, CV_8UC3);
     }
     else {
-        regions_img = cv::Mat::zeros(m_image_rgb->rows, m_image_rgb->cols, CV_8UC3);
+        regions_img = cv::Mat::zeros(m_rows, m_cols, CV_8UC3);
     }
 
     // Parcourt la matrice des régions et colorie l'image en concéquence
