@@ -133,7 +133,7 @@ protected:
     unsigned int m_rows, m_cols;
 
     int** m_region_matrix;
-    int m_nb_regions; //Nombre de régions / germes placés
+    size_t m_nb_regions; //Nombre de régions / germes placés
 
     // Stocke les couleurs associées aux régions
     std::vector<std::vector<int>> distinct_colors = {
