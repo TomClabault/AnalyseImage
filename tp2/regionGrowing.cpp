@@ -364,7 +364,10 @@ float rgb_distance_L1(const cv::Vec3f& rgb1, const cv::Vec3f& rgb2) {
 }
 
 void RegionGrowing::showSegmentation(std::string window_name, bool show_initials_seeds) {
-    cv::Mat regions_img = cv::Mat::zeros(m_image->rows, m_image->cols, CV_8UC3);
+    unsigned int rows = m_image_rgb == nullptr ? m_image->rows : m_image_rgb->rows;
+    unsigned int cols = m_image_rgb == nullptr ? m_image->cols : m_image_rgb->cols;
+
+    cv::Mat regions_img = cv::Mat::zeros(rows, cols, CV_8UC3);
 
     // Parcourt la matrice des régions et colorie l'image en concéquence
     for (int i = 0; i < regions_img.rows; i++) {
@@ -538,12 +541,7 @@ void RegionGrowing::printRegionsAdjacency() {
 RegionGrowingDifference::RegionGrowingDifference(OpenCVGrayscaleMat* image) : RegionGrowing(image) {}
 RegionGrowingDifference::RegionGrowingDifference(cv::Mat* image) : RegionGrowing(image) {}
 
-void RegionGrowingDifference::segmentation(const unsigned int treshold) {
-    //On vérifie bien que les seeds sont placées avant de commencer
-    if (!m_seeds_placed) {
-        return;
-    }
-
+void RegionGrowingDifference::segmentationGrayscale(const unsigned int treshold) {
     std::deque<Seed> active_seeds;
 
     int index = 0;
@@ -616,6 +614,94 @@ void RegionGrowingDifference::segmentation(const unsigned int treshold) {
     m_regions_computed = true;
 }
 
+void RegionGrowingDifference::segmentationRGB(const unsigned int treshold) {
+    const cv::Vec3i NO_NEIGHBOR(-1, -1, -1);
+    std::deque<SeedRGB> active_seeds;
+
+    int index = 0;
+    for (const std::pair<unsigned int, unsigned int>& initial_seed_position : m_seeds_positions) {
+        unsigned int x = initial_seed_position.first;
+        unsigned int y = initial_seed_position.second;
+
+        SeedRGB seed(x, y, m_image_rgb->at<cv::Vec3b>(y, x), index++);
+
+        active_seeds.push_back(seed);
+        m_region_matrix[y][x] = seed.region;
+    }
+
+    //On va faire grandir les régions tant qu'il y a des seeds
+    while (!active_seeds.empty()) {
+        SeedRGB seed = active_seeds.front();
+        active_seeds.pop_front();
+
+        unsigned int x = seed.position_x;
+        unsigned int y = seed.position_y;
+
+        //Valeur du pixel
+        cv::Vec3b current_value = seed.value;
+
+        //Valeurs des pixels au dessus, à gauche, à droite ou en dessous du germe
+        cv::Vec3i neighborPixelsValues[4] = {
+            (y >= 1) ? (cv::Vec3i)m_image_rgb->at<cv::Vec3b>(y - 1, x) : NO_NEIGHBOR,
+            (x >= 1) ? (cv::Vec3i)m_image_rgb->at<cv::Vec3b>(y, x - 1) : NO_NEIGHBOR,
+            (y < m_image_rgb->rows - 1) ? (cv::Vec3i)m_image_rgb->at<cv::Vec3b>(y + 1, x) : NO_NEIGHBOR,
+            (x < m_image_rgb->cols - 1) ? (cv::Vec3i)m_image_rgb->at<cv::Vec3b>(y, x + 1) : NO_NEIGHBOR
+        };
+
+        //Offsets utilisés pour factoriser le code
+        //Ces offsets correspondent aux décalages que l'on doit appliquer
+        //au pixel de référence pour obtenir, dans l'ordre:
+        //top, left, bottom, right
+        int xOffsets[4] = { 0, -1, 0, 1 };
+        int yOffsets[4] = { -1, 0, 1, 0 };
+
+        for (int offset = 0; offset < 4; offset++) {
+            int xOffset = xOffsets[offset];
+            int yOffset = yOffsets[offset];
+
+            int xNeighbor = x + xOffset;
+            int yNeighbor = y + yOffset;
+
+            cv::Vec3i neighborPixelValue = neighborPixelsValues[offset];
+            int neighborSeedRegion = neighborPixelValue == NO_NEIGHBOR ? -1 : m_region_matrix[yNeighbor][xNeighbor];
+
+            if (neighborPixelValue != NO_NEIGHBOR && //On a bien un pixel voisin (on est pas en dehors de l'image)
+                rgb_distance_L1(neighborPixelValue, current_value) <= treshold) {//Le pixel satisfait le critère de ressemblance
+
+                if (neighborSeedRegion == -1) { //Le pixel voisin n'a pas encore été visité par un germe
+                    SeedRGB new_seed(xNeighbor, yNeighbor, seed.value, seed.region);
+
+                    active_seeds.push_back(new_seed);
+                    m_region_matrix[yNeighbor][xNeighbor] = seed.region;
+                }
+            }
+
+            if (neighborSeedRegion != seed.region && neighborSeedRegion != -1) { //Le pixel voisin est déjà occupé par un germe et ce n'est pas un germe de notre propre région
+                //Le pixel a déjà été visité, on va ajouter la valeur du germe voisin
+                //à la liste des régions adjacentes de la région actuelle
+                m_regions_adjacency[seed.region].insert(neighborSeedRegion);
+            }
+        }
+    }
+
+    normalizeAdjacency();
+    m_regions_computed = true;
+}
+
+void RegionGrowingDifference::segmentation(const unsigned int treshold) {
+    //On vérifie bien que les seeds sont placées avant de commencer
+    if (!m_seeds_placed) {
+        return;
+    }
+
+    if (m_image_rgb == nullptr) {
+        segmentationGrayscale(treshold);
+    }
+    else {
+        segmentationRGB(treshold);
+    }
+}
+
 void RegionGrowingDifference::regionFusion(const unsigned int treshold) {
     // On vérifie bien que les regions sont placées avant de commencer
     if (!m_regions_computed) {
@@ -629,6 +715,9 @@ void RegionGrowingDifference::regionFusion(const unsigned int treshold) {
         active_regions_idx.push_back(regionIndex);
     }
 
+    unsigned int rows = m_image_rgb == nullptr ? m_image->rows : m_image_rgb->rows;
+    unsigned int cols = m_image_rgb == nullptr ? m_image->cols : m_image_rgb->cols;
+
     // On va fusionner les régions tant qu'il y a des régions dans la file
     while (!active_regions_idx.empty()) {
         int regionIdx = active_regions_idx.front();
@@ -638,8 +727,6 @@ void RegionGrowingDifference::regionFusion(const unsigned int treshold) {
         unsigned int y = m_seeds_positions[regionIdx].second;
 
         //Valeur du pixel de la région
-        unsigned int value = (*m_image)(y, x);
-
         auto it = m_regions_adjacency[regionIdx].begin();
         bool hasBeenMerged = false;
         while (!hasBeenMerged && it != m_regions_adjacency[regionIdx].end()) {
@@ -648,17 +735,29 @@ void RegionGrowingDifference::regionFusion(const unsigned int treshold) {
             int neighborX = m_seeds_positions[neighborRegionIdx].first;
             int neighborY = m_seeds_positions[neighborRegionIdx].second;
 
-            unsigned char neighborValue = (*m_image)(neighborY, neighborX);
+            bool similar_regions = false;
+            if (m_image_rgb == nullptr) {
+                unsigned int value = (*m_image)(y, x);
+                unsigned char neighborValue = (*m_image)(neighborY, neighborX);
 
-            if (std::abs((int)(neighborValue - value)) <= treshold) {
+                similar_regions = std::abs((int)(neighborValue - value)) <= treshold;
+            }
+            else {
+                cv::Vec3b value = m_image_rgb->at<cv::Vec3b>(y, x);
+                cv::Vec3b neighborValue = m_image_rgb->at<cv::Vec3b>(neighborY, neighborX);
+
+                similar_regions = rgb_distance_L1(value, neighborValue) <= treshold;
+            }
+
+            if (similar_regions) {
                 // On fusionne les régions dans la liste d'adjacence
                 m_regions_adjacency[regionIdx].insert(m_regions_adjacency[neighborRegionIdx].begin(), m_regions_adjacency[neighborRegionIdx].end());
                 m_regions_adjacency[regionIdx].erase(neighborRegionIdx);
                 m_regions_adjacency[regionIdx].erase(regionIdx);
 
                 // On fusionne les régions dans la matrice
-                for (int y = 0; y < m_image->rows; y++) {
-                    for (int x = 0; x < m_image->cols; x++) {
+                for (int y = 0; y < rows; y++) {
+                    for (int x = 0; x < cols; x++) {
                         if (m_region_matrix[y][x] == neighborRegionIdx) {
                             m_region_matrix[y][x] = regionIdx;
                         }

@@ -79,7 +79,7 @@ int main() {
         }
     }
 
-    RegionGrowingAverage regionGrowing(&inputImage);
+    RegionGrowingDifference regionGrowing(&inputImage);
 
     std::vector<std::pair<unsigned int, unsigned int>> positionsSimpleImageGrayscale;
     positionsSimpleImageGrayscale.push_back(std::pair<unsigned int, unsigned int>(383, 143));
@@ -95,12 +95,12 @@ int main() {
     positionsSimpleImageGrayscale.push_back(std::pair<unsigned int, unsigned int>(181, 77));
     positionsSimpleImageGrayscale.push_back(std::pair<unsigned int, unsigned int>(96, 71));
 
-    regionGrowing.blur(7, 1);
+    { Benchmark benchmark("Blur time"); regionGrowing.blur(7, 1); }
     //regionGrowing.placeSeedsManual(positionsSimpleImageGrayscale);
-    regionGrowing.placeSeedsRandom(12);
-    regionGrowing.segmentation(45);
+    regionGrowing.placeSeedsRandom(24);
+    { Benchmark benchmark("Segmentation time"); regionGrowing.segmentation(45); }
     regionGrowing.showSegmentation("Segmentation before fusion", true);
-    regionGrowing.regionFusion(45);
+    { Benchmark benchmark("Region fusion time"); regionGrowing.regionFusion(45); }
     regionGrowing.showSegmentation("Segmentation after fusion", true);
     //regionGrowing.removeNoise(100);
     regionGrowing.showSegmentation("Segmentation after noise removal", true);

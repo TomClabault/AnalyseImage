@@ -167,6 +167,16 @@ public:
     RegionGrowingDifference(cv::Mat* image);
 
     /**
+     * Lance la segmentation de l'image en niveaux de gris. Voir doc de 'segmentation'
+     */
+    void segmentationGrayscale(const unsigned int treshold);
+
+    /**
+     * Lance la segmentation de l'image en RGB. Voir doc de 'segmentation'
+     */
+    void segmentationRGB(const unsigned int treshold);
+
+    /**
      * Lance la segmentation de l'image (grossissement des germes).
      * Cette segmentation va utiliser une valeur seuil pour savoir si oui
      * ou non un germe doit grossir sur un pixel adjacent ou non.
