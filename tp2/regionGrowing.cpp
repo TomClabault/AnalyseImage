@@ -329,14 +329,9 @@ void RegionGrowing::removeNoise(const unsigned int nbPixels) {
         }
     }
 
-    // Print regions_pixels_count
-    //for (int i = 0; i < regions_pixels_count.size(); i++) {
-    //    std::cout << "Region " << i << " : " << regions_pixels_count[i] << " pixels" << std::endl;
-    //}
-
     // On remplace la région par un de ses voisins dans la matrice des régions
     for (int regionIdx = 0; regionIdx < regions_pixels_count.size(); regionIdx++) {
-        if (regions_pixels_count[regionIdx] < nbPixels) {
+        if (regions_pixels_count[regionIdx] < nbPixels && m_regions_adjacency[regionIdx].find(-1) == m_regions_adjacency[regionIdx].end()) {
             int newRegion;
             if (!m_regions_adjacency[regionIdx].empty()) {
                 // On remplace la région par un de ses voisins dans la matrice des régions
