@@ -405,7 +405,7 @@ void RegionGrowing::showSegmentation(std::string window_name, bool show_initials
 }
 
 void RegionGrowing::show_img(std::string window_name, bool wait_for_key) {
-    cv::imshow(window_name, *m_image);
+    cv::imshow(window_name, m_image == nullptr ? *m_image_rgb : *m_image);
 
     if (wait_for_key) {
         cv::waitKey(0);
