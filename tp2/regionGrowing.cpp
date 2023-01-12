@@ -433,7 +433,7 @@ void RegionGrowing::showSeeds(cv::Mat* image, cv::Scalar color) {
 
             cv::circle(*image, center, radius, color, -1);
 
-            std::string text = std::to_string(index);
+            std::string text = std::string(" ") + std::to_string(index);
             int fontFace = cv::FONT_HERSHEY_SIMPLEX;
             double fontScale = 0.6;
             int thicknessText = 2;
