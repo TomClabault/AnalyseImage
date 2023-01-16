@@ -11,7 +11,7 @@
 #define TEST_IMAGE_HEIGHT 9
 
 int main() {
-    std::string inputImagePath = "exampleImage.png";
+    std::string inputImagePath = "images/exampleImage.png";
 
     OpenCVGrayscaleMat inputImage = cv::imread(inputImagePath, cv::IMREAD_GRAYSCALE);
     //cv::Mat inputImage = cv::imread(inputImagePath, cv::IMREAD_COLOR);

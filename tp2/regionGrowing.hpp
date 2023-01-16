@@ -21,7 +21,7 @@ public:
         float g = (rgb1[1] - rgb2[1]);
         float b = (rgb1[2] - rgb2[2]);
 
-        return std::sqrtf(r * r + g * g + b * b);
+        return std::sqrt(r * r + g * g + b * b);
     }
 
     static float rgb_distance_LInfinity(const cv::Vec3f& rgb1, const cv::Vec3f& rgb2) {
