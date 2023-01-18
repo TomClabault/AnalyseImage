@@ -28,7 +28,7 @@ int main() {
 
     { Benchmark benchmark("Blur time"); regionGrowing.blur(5, 1); }
     //regionGrowing.placeSeedsManual(positionsSimpleImageGrayscale);
-    regionGrowing.placeSeedsRandom(64, true);
+    regionGrowing.placeSeedsRandom(64);
     { Benchmark benchmark("Segmentation time"); regionGrowing.segmentation(50, RegionGrowing::rgb_distance_L1); }
     regionGrowing.showSegmentation("Segmentation before fusion", false);
     { Benchmark benchmark("Region fusion time"); regionGrowing.regionFusion(60); }
