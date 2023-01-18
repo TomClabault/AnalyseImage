@@ -7,9 +7,6 @@
 #include "benchmark.hpp"
 #include "regionGrowing.hpp"
 
-#define TEST_IMAGE_WIDTH 10
-#define TEST_IMAGE_HEIGHT 9
-
 int main() {
     std::string inputImagePath = "images/exampleImage.png";
 
@@ -20,13 +17,6 @@ int main() {
         std::cout << "Impossible d'ouvrir l'image\n";
 
         return 0;
-    }
-
-    OpenCVGrayscaleMat testImage(TEST_IMAGE_HEIGHT, TEST_IMAGE_WIDTH);
-    for(int i = 0; i < TEST_IMAGE_HEIGHT; i++) {
-        for(int j = 0; j < TEST_IMAGE_WIDTH; j++) {
-            testImage(i, j) = 0;
-        }
     }
 
     RegionGrowingDifference regionGrowing(&inputImage);
