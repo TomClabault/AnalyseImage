@@ -120,32 +120,20 @@ void convolution(const cv::Mat& inputImage, cv::Mat& outputImage, const float ke
     }
 }
 
-void gradientDirection(const cv::Mat& derivX, const cv::Mat& derivY, cv::Mat& gradientDir)
+void gradientDirection(const cv::Mat& derivX, const cv::Mat& derivY, cv::Mat& gradientDir, float treshold)
 {
     gradientDir = cv::Mat(derivX.rows, derivX.cols, CV_8UC3);
-
-    float min = 1000;
-    float max = 0;
 
     for (int i = 0; i < derivX.rows; i++)
         for (int j = 0; j < derivY.cols; j++)
         {
-            if (derivY.at<unsigned char>(i, j) == 0)
+            if (derivY.at<unsigned char>(i, j) <= treshold)
                 gradientDir.at<cv::Vec3b>(i, j) = cv::Vec3b(0, 0, 255);
-            else {
-                if ( 4 * 180 * std::atan((float)derivX.at<unsigned char>(i, j) / (float)derivY.at<unsigned char>(i, j)) / M_PI > max)
-                    max = 4 * 180 * std::atan((float)derivX.at<unsigned char>(i, j) / (float)derivY.at<unsigned char>(i, j)) / M_PI;
-                if (4 * 180 * std::atan((float)derivX.at<unsigned char>(i, j) / (float)derivY.at<unsigned char>(i, j)) / M_PI < min)
-                    min = 4 * 180 * std::atan((float)derivX.at<unsigned char>(i, j) / (float)derivY.at<unsigned char>(i, j)) / M_PI;
-
+            else
                 gradientDir.at<cv::Vec3b>(i, j) = cv::Vec3b(2 * std::atan((float)derivX.at<unsigned char>(i, j) / (float)derivY.at<unsigned char>(i, j)) / M_PI * 255, 255, 255);
-                //std::cout << 180 * std::atan((float)derivX.at<unsigned char>(i, j) / (float)derivY.at<unsigned char>(i, j)) / M_PI << std::endl;
-            }
         }
 
     cv::cvtColor(gradientDir, gradientDir, cv::COLOR_HSV2BGR);
-
-    std::cout << "min, max = " << min << ", " << max << "\n";
 }
 
 void tresholding(const cv::Mat& inputImage, cv::Mat& outputImage, unsigned int treshold)

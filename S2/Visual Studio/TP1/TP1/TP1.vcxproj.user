@@ -8,6 +8,6 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LocalDebuggerEnvironment>PATH=%PATH%;E:\Programmes\opencv-4.6.0\build\x64\vc15\bin</LocalDebuggerEnvironment>
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
-    <LocalDebuggerCommandArguments>../../../TP1/lena_color.png sobel 80</LocalDebuggerCommandArguments>
+    <LocalDebuggerCommandArguments>../../../TP1/Valve.png sobel 80</LocalDebuggerCommandArguments>
   </PropertyGroup>
 </Project>

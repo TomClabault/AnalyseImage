@@ -46,7 +46,7 @@ int main(int argc, char** argv)
     }
 
     cv::Mat gradientDir;
-    gradientDirection(outputDerivX, outputDerivY, gradientDir);
+    gradientDirection(outputDerivX, outputDerivY, gradientDir, 5);
 
     cv::imshow("derivX", outputDerivX);
     cv::imshow("derivY", outputDerivY);
