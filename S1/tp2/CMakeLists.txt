@@ -16,6 +16,7 @@ include_directories(inc)
 set(SRCS
 	main.cpp
 	regionGrowing.cpp
+	benchmark.cpp
 )
 
 

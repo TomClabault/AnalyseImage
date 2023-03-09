@@ -9,5 +9,5 @@ public:
 private:
 	std::string m_message;
 
-	std::chrono::steady_clock::time_point m_start, m_stop;
+	decltype(std::chrono::high_resolution_clock::now()) m_start = std::chrono::high_resolution_clock::now();
 };
