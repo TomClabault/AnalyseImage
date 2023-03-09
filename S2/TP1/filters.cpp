@@ -120,6 +120,90 @@ void convolution(const cv::Mat& inputImage, cv::Mat& outputImage, const float ke
     }
 }
 
+void compute_gaussian_kernel(float** kernel, unsigned int kernel_size, float sigma) {
+    unsigned int half_size = kernel_size / 2;
+    float kernel_sum = 0;
+
+    for (unsigned int y = 0; y < kernel_size; y++) {
+        for (unsigned int x = 0; x < kernel_size; x++) {
+            int shift_x = x - half_size;
+            int shift_y = y - half_size;
+
+            kernel[y][x] = 1.0 / (2 * M_PI * sigma * sigma) * exp(-((shift_x * shift_x + shift_y * shift_y) / (2 * sigma * sigma)));
+
+            kernel_sum += kernel[y][x];
+        }
+    }
+
+    //Pour être sûr que la somme des valeurs du noyau = 1
+    for (unsigned int y = 0; y < kernel_size; y++) {
+        for (unsigned int x = 0; x < kernel_size; x++) {
+            kernel[y][x] /= kernel_sum;
+        }
+    }
+}
+
+void gaussianBlur(const cv::Mat& inputImage, cv::Mat& outputImage, unsigned int kernel_size, float sigma) {
+
+    if (kernel_size == 0 || (kernel_size % 2 == 0)) {
+        throw std::invalid_argument("The kernel size needs to be stricly positive and odd.");
+
+        return;
+    }
+
+    float** kernel = (float**)malloc(sizeof(float*) * kernel_size);
+    if (kernel == NULL)
+        return;
+
+    for (unsigned int i = 0; i < kernel_size; i++) {
+        kernel[i] = (float*)malloc(sizeof(float) * kernel_size);
+
+        if (kernel[i] == NULL)
+            return;
+    }
+
+    compute_gaussian_kernel(kernel, kernel_size, sigma);
+
+    unsigned int rows = inputImage.rows;
+    unsigned int cols = inputImage.cols;
+
+    int half_kernel_size = kernel_size / 2;
+
+    outputImage = cv::Mat(inputImage.rows, inputImage.cols, inputImage.type());
+
+    for (unsigned int y_img = 0; y_img < rows; y_img++) {
+        for (unsigned int x_img = 0; x_img < cols; x_img++) {
+            unsigned char current_pixel_value = inputImage.at<unsigned char>(y_img, x_img);
+
+            double new_pixel_value = 0;
+            for (int y_kernel = 0; y_kernel < kernel_size; y_kernel++) {
+                for (int x_kernel = 0; x_kernel < kernel_size; x_kernel++) {
+                    int y_kernel_shift = y_kernel - half_kernel_size;
+                    int x_kernel_shift = x_kernel - half_kernel_size;
+
+                    unsigned int y_pos = y_img + y_kernel_shift;
+                    unsigned int x_pos = x_img + x_kernel_shift;
+
+                    unsigned char pixel_value;
+
+                    //Si on est en train de dépasser des bords de l'image
+                    if (y_pos < 0 || y_pos >= rows || x_pos < 0 || x_pos >= cols) {
+                        //On va considérer que la valeur du pixel est la même que celle du pixel courant
+                        pixel_value = current_pixel_value;
+                    }
+                    else {
+                        pixel_value = inputImage.at<unsigned char>(y_pos, x_pos);
+                    }
+
+                    new_pixel_value += pixel_value * kernel[y_kernel][x_kernel];
+                }
+            }
+
+            outputImage.at<unsigned char>(y_img, x_img) = (unsigned char)new_pixel_value;
+        }
+    }
+}
+
 void gradientDirection(const cv::Mat& derivX, const cv::Mat& derivY, cv::Mat& gradientDir, float treshold)
 {
     gradientDir = cv::Mat(derivX.rows, derivX.cols, CV_8UC3);
@@ -138,6 +222,8 @@ void gradientDirection(const cv::Mat& derivX, const cv::Mat& derivY, cv::Mat& gr
 
 void tresholding(const cv::Mat& inputImage, cv::Mat& outputImage, unsigned int treshold)
 {
+    outputImage = cv::Mat(inputImage.rows, inputImage.cols, inputImage.type());
+
     for (int i = 0; i < inputImage.rows; i++)
     {
         for (int j = 0; j < inputImage.cols; j++)
@@ -150,8 +236,13 @@ void tresholding(const cv::Mat& inputImage, cv::Mat& outputImage, unsigned int t
 
 void sumImages(cv::Mat& outputSumImage, const cv::Mat& inputImage1, const cv::Mat& inputImage2)
 {
-    if ((inputImage1.rows != inputImage2.rows) || (inputImage1.cols != inputImage2.cols))
+    if ((inputImage1.rows != inputImage2.rows) || (inputImage1.cols != inputImage2.cols)) {
+        std::cout << "Input images to sumImages must be the same dimensions\n";
+
         return;
+    }
+
+    outputSumImage = cv::Mat(inputImage1.rows, inputImage1.cols, inputImage1.type());
 
     for (int i = 0; i < inputImage1.rows; i++)
     {

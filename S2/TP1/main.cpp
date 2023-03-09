@@ -13,27 +13,46 @@ int main(int argc, char** argv)
     std::string kernelType;
     std::string inputImagePath;
 
-    unsigned int treshold;
+    unsigned int threshold;
 
-    cv::Mat inputImage, outputImage, outputDerivX, outputDerivY;
+    bool preprocessBlur;
+    unsigned int gaussianBlurKernelSize;
+    float gaussianBlurSigma;
 
-    if (argc < 4)
+    cv::Mat inputImage, inputImagePreprocessed, outputImage, outputDerivX, outputDerivY;
+
+    if (argc < 7)
     {
-        std::cout << "Usage: ./main <imageFile> <kernelType> <treshold>" << std::endl;
+        std::cout << "Usage: ./main <imageFile> <kernelType> <treshold> <preprocessBlur> <gaussianKernelSize> <gaussianKernelSigma>\n\n" << "<kernelType> can be either of: {sobel, prewitt, kirsh} " << std::endl;
 
         return -1;
     }
 
     readImage(inputImage, argv[1]); 
     kernelType = std::string(argv[2]);
-    treshold = atoi(argv[3]);
+    threshold = atoi(argv[3]);
+    preprocessBlur = std::string(argv[4]) != "false" && std::string(argv[4]) != "False";
+
+    if (preprocessBlur)
+    {
+        gaussianBlurKernelSize = atoi(argv[5]);
+        gaussianBlurSigma = atof(argv[6]);
+
+        std::cout << gaussianBlurKernelSize << ", " << gaussianBlurSigma << std::endl;
+        gaussianBlur(inputImage, inputImagePreprocessed, gaussianBlurKernelSize, gaussianBlurSigma);
+
+        cv::imshow("blur", inputImagePreprocessed);
+        cv::waitKey(0);
+    }
+    else
+        inputImagePreprocessed = inputImage;
 
     if (kernelType == "Kirsh" || kernelType == "kirsh")
-        kirshFilter(inputImage, outputImage);
+        kirshFilter(inputImagePreprocessed, outputImage);
     else if (kernelType == "Sobel" || kernelType == "sobel")
-        sobelFilter(inputImage, outputDerivX, outputDerivY);
+        sobelFilter(inputImagePreprocessed, outputDerivX, outputDerivY);
     else if (kernelType == "Prewitt" || kernelType == "prewitt")
-        prewittFilter(inputImage, outputImage);
+        prewittFilter(inputImagePreprocessed, outputImage);
     else if (kernelType == "free2")//X and Y filters are given in files
         ;
     else if (kernelType == "free4")//4 "diagonal directions" filters are given in files
@@ -45,11 +64,16 @@ int main(int argc, char** argv)
         return -1;
     }
 
-    cv::Mat gradientDir;
+    cv::Mat gradientDir, gradientSum, gradientThresholded;
+
     gradientDirection(outputDerivX, outputDerivY, gradientDir, 5);
+    sumImages(gradientSum, outputDerivX, outputDerivY);
+    tresholding(gradientSum, gradientThresholded, threshold);
 
     cv::imshow("derivX", outputDerivX);
     cv::imshow("derivY", outputDerivY);
+    cv::imshow("gradientXY", gradientSum);
     cv::imshow("gradientDirection", gradientDir);
+    cv::imshow("Tresholded", gradientThresholded);
     cv::waitKey(0);
 }

@@ -16,6 +16,7 @@ void prewittFilter(const cv::Mat& inputImage, cv::Mat& outputImage);
 
 void convolution(const cv::Mat& inputImage, cv::Mat& outputImage, float** kernel, int kernel_size);
 
+void gaussianBlur(const cv::Mat& inputImage, cv::Mat& outputBlurred, unsigned int kernel_size, float sigma);
 void gradientDirection(const cv::Mat& derivX, const cv::Mat& derivY, cv::Mat& gradientDir, float treshold);
 
 void print_kernel(float** kernel, unsigned int kernel_size);
