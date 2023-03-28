@@ -52,7 +52,7 @@ int main(int argc, char** argv)
     else if (kernelType == "Sobel" || kernelType == "sobel")
         sobelFilter(inputImagePreprocessed, outputDerivX, outputDerivY);
     else if (kernelType == "Prewitt" || kernelType == "prewitt")
-        prewittFilter(inputImagePreprocessed, outputImage);
+        prewittFilter(inputImagePreprocessed, outputDerivX, outputDerivY);
     else if (kernelType == "free2")//X and Y filters are given in files
         ;
     else if (kernelType == "free4")//4 "diagonal directions" filters are given in files
@@ -64,16 +64,17 @@ int main(int argc, char** argv)
         return -1;
     }
 
-    cv::Mat gradientDir, gradientSum, gradientThresholded;
+    cv::Mat gradient, gradientSum, gradientThresholded;
 
-    gradientDirection(outputDerivX, outputDerivY, gradientDir, 5);
+    gradientDirection(outputDerivX, outputDerivY, gradient, 5);
+    //gradientMagnitude(outputDerivX, outputDerivY, gradient, 5);
     sumImages(gradientSum, outputDerivX, outputDerivY);
     tresholding(gradientSum, gradientThresholded, threshold);
 
     cv::imshow("derivX", outputDerivX);
     cv::imshow("derivY", outputDerivY);
     cv::imshow("gradientXY", gradientSum);
-    cv::imshow("gradientDirection", gradientDir);
+    cv::imshow("gradientDirection", gradient);
     cv::imshow("Tresholded", gradientThresholded);
     cv::waitKey(0);
 }

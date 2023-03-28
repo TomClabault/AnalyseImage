@@ -12,12 +12,13 @@
 
 void kirshFilter(const cv::Mat& inputImage, cv::Mat& outputImage);
 void sobelFilter(const cv::Mat& inputImage, cv::Mat& outputDerivX, cv::Mat& outputDerivY);
-void prewittFilter(const cv::Mat& inputImage, cv::Mat& outputImage);
+void prewittFilter(const cv::Mat& inputImage, cv::Mat& outputDerivX, cv::Mat& outputDerivY);
 
 void convolution(const cv::Mat& inputImage, cv::Mat& outputImage, float** kernel, int kernel_size);
 
 void gaussianBlur(const cv::Mat& inputImage, cv::Mat& outputBlurred, unsigned int kernel_size, float sigma);
 void gradientDirection(const cv::Mat& derivX, const cv::Mat& derivY, cv::Mat& gradientDir, float treshold);
+void gradientMagnitude(const cv::Mat& derivX, const cv::Mat& derivY, cv::Mat& gradientMagnitude, float treshold);
 
 void print_kernel(float** kernel, unsigned int kernel_size);
 

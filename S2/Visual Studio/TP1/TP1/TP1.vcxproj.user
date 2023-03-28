@@ -3,11 +3,11 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LocalDebuggerEnvironment>PATH=%PATH%;E:\Programmes\opencv-4.6.0\build\x64\vc15\bin</LocalDebuggerEnvironment>
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
-    <LocalDebuggerCommandArguments>../../../TP1/Valve.png sobel 8 true 5 1</LocalDebuggerCommandArguments>
+    <LocalDebuggerCommandArguments>../../../TP1/testMathis.png prewitt 8 false 5 1</LocalDebuggerCommandArguments>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LocalDebuggerEnvironment>PATH=%PATH%;E:\Programmes\opencv-4.6.0\build\x64\vc15\bin</LocalDebuggerEnvironment>
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
-    <LocalDebuggerCommandArguments>../../../TP1/Valve.png sobel 8 true 5 1</LocalDebuggerCommandArguments>
+    <LocalDebuggerCommandArguments>../../../TP1/testMathis.png prewitt 8 false 5 1</LocalDebuggerCommandArguments>
   </PropertyGroup>
 </Project>

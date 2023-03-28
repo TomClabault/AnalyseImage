@@ -220,6 +220,19 @@ void gradientDirection(const cv::Mat& derivX, const cv::Mat& derivY, cv::Mat& gr
     cv::cvtColor(gradientDir, gradientDir, cv::COLOR_HSV2BGR);
 }
 
+void gradientMagnitude(const cv::Mat& derivX, const cv::Mat& derivY, cv::Mat& gradientMagnitude, float treshold)
+{
+    /*gradientMagnitude = cv::Mat(derivX.rows, derivX.cols, CV_8UC3);
+
+    for (int i = 0; i < derivX.rows; i++)
+        for (int j = 0; j < derivY.cols; j++)
+        {
+            float value = std::sqrt((float)derivX.at<unsigned char>(i, j) * (float)derivX.at<unsigned char>(i, j) + (float)derivY.at<unsigned char>(i, j) * (float)derivY.at<unsigned char>(i, j));
+
+            gradientDirection.at<cv::Vec3b>(i, j) = cv::Vec3b( * 255, 255, 255);
+        }*/
+}
+
 void tresholding(const cv::Mat& inputImage, cv::Mat& outputImage, unsigned int treshold)
 {
     outputImage = cv::Mat(inputImage.rows, inputImage.cols, inputImage.type());
@@ -270,7 +283,27 @@ void print_kernel(float** kernel, unsigned int kernel_size)
 
 void kirshFilter(const cv::Mat& inputImage, cv::Mat& outputImage)
 {
+    /*static const float sobelKernelX[3][3] =
+    {
+        {1, 0, -1},
+        {2, 0, -2},
+        {1, 0, -1}
+    };
 
+    static const float sobelKernelY[3][3] =
+    {
+        {1, 2, 1},
+        {0, 0, 0},
+        {-1, -2, -1}
+    };
+
+    outputDerivX = cv::Mat(inputImage.rows, inputImage.cols, inputImage.type());
+    outputDerivY = cv::Mat(inputImage.rows, inputImage.cols, inputImage.type());
+
+    convolution<3>(inputImage, outputDerivX, kirschX);
+    convolution<3>(inputImage, outputDerivY, sobelKernelY);
+    convolution<3>(inputImage, outputDerivY, sobelKernelY);
+    convolution<3>(inputImage, outputDerivY, sobelKernelY);*/
 }
 
 void sobelFilter(const cv::Mat& inputImage, cv::Mat& outputDerivX, cv::Mat& outputDerivY)
@@ -296,7 +329,25 @@ void sobelFilter(const cv::Mat& inputImage, cv::Mat& outputDerivX, cv::Mat& outp
     convolution<3>(inputImage, outputDerivY, sobelKernelY);
 }
 
-void prewittFilter(const cv::Mat& inputImage, cv::Mat& outputImage)
+void prewittFilter(const cv::Mat& inputImage, cv::Mat& outputDerivX, cv::Mat& outputDerivY)
 {
+    static const float prewittKernelX[3][3] =
+    {
+        {1, 0, -1},
+        {1, 0, -1},
+        {1, 0, -1}
+    };
 
+    static const float prewittKernelY[3][3] =
+    {
+        {1, 1, 1},
+        {0, 0, 0},
+        {-1, -1, -1}
+    };
+
+    outputDerivX = cv::Mat(inputImage.rows, inputImage.cols, inputImage.type());
+    outputDerivY = cv::Mat(inputImage.rows, inputImage.cols, inputImage.type());
+
+    convolution<3>(inputImage, outputDerivX, prewittKernelX);
+    convolution<3>(inputImage, outputDerivY, prewittKernelY);
 }
