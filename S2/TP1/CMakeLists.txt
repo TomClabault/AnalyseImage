@@ -15,6 +15,7 @@ include_directories(inc)
 
 set(SRCS
 	main.cpp
+	filters.cpp
 )
 
 
