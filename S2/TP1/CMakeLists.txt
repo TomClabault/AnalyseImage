@@ -2,9 +2,10 @@ cmake_minimum_required(VERSION 3.16s)
 project(TP1)
 
 set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_PREFIX_PATH "%{Qt:QT_INSTALL_PREFIX};E:\\Programmes\\opencv-4.6.0\\build")
 
 if(NOT CMAKE_BUILD_TYPE)
-  set(CMAKE_BUILD_TYPE Release)
+    set(CMAKE_BUILD_TYPE Release)
 endif()
 
 set(CMAKE_CXX_FLAGS "-Wall -Wextra -march=native -pthread")
@@ -15,6 +16,7 @@ include_directories(inc)
 
 set(SRCS
 	main.cpp
+        filters.cpp
 )
 
 
