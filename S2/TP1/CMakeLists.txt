@@ -15,7 +15,7 @@ set(CMAKE_CXX_FLAGS_RELEASE "-O3")
 include_directories(inc)
 
 set(SRCS
-	main.cpp
+        main.cpp
         filters.cpp
 )
 

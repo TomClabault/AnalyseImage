@@ -19,7 +19,7 @@ int main(int argc, char** argv)
     unsigned int gaussianBlurKernelSize;
     float gaussianBlurSigma;
 
-    cv::Mat inputImage, inputImagePreprocessed, outputImage, outputDerivX, outputDerivY;
+    cv::Mat inputImage, inputImagePreprocessed, outputKirsch, outputDerivX, outputDerivY;
 
     if (argc < 7)
     {
@@ -47,8 +47,8 @@ int main(int argc, char** argv)
     else
         inputImagePreprocessed = inputImage;
 
-    if (kernelType == "Kirsh" || kernelType == "kirsh")
-        kirshFilter(inputImagePreprocessed, outputImage);
+    if (kernelType == "Kirsch" || kernelType == "kirsch")
+        kirshFilter(inputImagePreprocessed, outputKirsch);
     else if (kernelType == "Sobel" || kernelType == "sobel")
         sobelFilter(inputImagePreprocessed, outputDerivX, outputDerivY);
     else if (kernelType == "Prewitt" || kernelType == "prewitt")
@@ -64,17 +64,38 @@ int main(int argc, char** argv)
         return -1;
     }
 
-    cv::Mat gradient, gradientSum, gradientThresholded;
+    cv::Mat gradient, gradientThresholded;
 
-    gradientDirection(outputDerivX, outputDerivY, gradient, 5);
-    //gradientMagnitude(outputDerivX, outputDerivY, gradient, 5);
-    sumImages(gradientSum, outputDerivX, outputDerivY);
-    tresholding(gradientSum, gradientThresholded, threshold);
 
-    cv::imshow("derivX", outputDerivX);
-    cv::imshow("derivY", outputDerivY);
-    cv::imshow("gradientXY", gradientSum);
-    cv::imshow("gradientDirection", gradient);
-    cv::imshow("Tresholded", gradientThresholded);
+    if (kernelType == "Kirsch" || kernelType == "kirsch")
+    {
+        cv::Mat outputKirschNorm;
+        normalize_grayscale_image(outputKirsch, outputKirschNorm);
+
+        cv::imshow("Output", outputKirschNorm);
+    }
+    else if ((kernelType == "Sobel" || kernelType == "sobel") || (kernelType == "Prewitt" || kernelType == "prewitt"))
+    {
+        cv::Mat outputDerivXNorm, outputDerivYNorm, outputDerivXThresh, outputDerivYThresh;
+        cv::Mat gradient_magnitude, gradient_direction, gradient_composite;
+
+        normalize_grayscale_image(outputDerivX, outputDerivXNorm);
+        normalize_grayscale_image(outputDerivY, outputDerivYNorm);
+
+        //low_treshold(outputDerivXNorm, outputDerivXThresh, 32);
+        //low_treshold(outputDerivYNorm, outputDerivYThresh, 32);
+
+        gradientMagnitude(outputDerivX, outputDerivY, gradient_magnitude);
+        gradientDirection(outputDerivXNorm, outputDerivYNorm, gradient_direction);
+        multiply_rgb_by_grayscale(gradient_direction, gradient_magnitude, gradient_composite);
+
+        cv::imshow("X", outputDerivXNorm);
+        cv::imshow("Y", outputDerivYNorm);
+        //cv::imshow("XThresh", outputDerivXThresh);
+        //cv::imshow("YThresh", outputDerivYThresh);
+        cv::imshow("gradientMagnitude", gradient_magnitude);
+        cv::imshow("gradientDirection", gradient_direction);
+        cv::imshow("gradientComposite", gradient_composite);
+    }
     cv::waitKey(0);
 }

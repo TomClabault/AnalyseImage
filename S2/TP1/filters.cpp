@@ -61,9 +61,9 @@ void convolution(const cv::Mat& inputImage, cv::Mat& outputImage, float** kernel
 
                     unsigned char pixel_value;
 
-                    //Si on est en train de dépasser des bords de l'image
+                    //Si on est en train de dï¿½passer des bords de l'image
                     if (y_pos < 0 || y_pos >= inputImage.rows || x_pos < 0 || x_pos >= inputImage.cols)
-                        //On va considérer que la valeur du pixel est la même que celle du pixel courant
+                        //On va considï¿½rer que la valeur du pixel est la mï¿½me que celle du pixel courant
                         pixel_value = current_pixel_value;
                     else
                         pixel_value = inputImage.at<unsigned char>(y_pos, x_pos);
@@ -103,9 +103,9 @@ void convolution(const cv::Mat& inputImage, cv::Mat& outputImage, const float ke
 
                     unsigned char pixel_value;
 
-                    //Si on est en train de dépasser des bords de l'image
+                    //Si on est en train de dï¿½passer des bords de l'image
                     if (y_pos < 0 || y_pos >= inputImage.rows || x_pos < 0 || x_pos >= inputImage.cols)
-                        //On va considérer que la valeur du pixel est la même que celle du pixel courant
+                        //On va considï¿½rer que la valeur du pixel est la mï¿½me que celle du pixel courant
                         pixel_value = current_pixel_value;
                     else
                         pixel_value = inputImage.at<unsigned char>(y_pos, x_pos);
@@ -115,7 +115,7 @@ void convolution(const cv::Mat& inputImage, cv::Mat& outputImage, const float ke
             }
 
             float new_value = (new_pixel_value / kernel_sum);
-            outputImage.at<unsigned char>(y_img, x_img) = (unsigned char)(new_value < 0 ? 0 : new_value);
+            outputImage.at<unsigned char>(y_img, x_img) = (unsigned char)(new_value < 0 ? 0 : (new_value > 255 ? 255 : new_value));
         }
     }
 }
@@ -135,7 +135,7 @@ void compute_gaussian_kernel(float** kernel, unsigned int kernel_size, float sig
         }
     }
 
-    //Pour être sûr que la somme des valeurs du noyau = 1
+    //Pour etre sur que la somme des valeurs du noyau = 1
     for (unsigned int y = 0; y < kernel_size; y++) {
         for (unsigned int x = 0; x < kernel_size; x++) {
             kernel[y][x] /= kernel_sum;
@@ -186,9 +186,9 @@ void gaussianBlur(const cv::Mat& inputImage, cv::Mat& outputImage, unsigned int 
 
                     unsigned char pixel_value;
 
-                    //Si on est en train de dépasser des bords de l'image
+                    //Si on est en train de dï¿½passer des bords de l'image
                     if (y_pos < 0 || y_pos >= rows || x_pos < 0 || x_pos >= cols) {
-                        //On va considérer que la valeur du pixel est la même que celle du pixel courant
+                        //On va considï¿½rer que la valeur du pixel est la mï¿½me que celle du pixel courant
                         pixel_value = current_pixel_value;
                     }
                     else {
@@ -204,33 +204,56 @@ void gaussianBlur(const cv::Mat& inputImage, cv::Mat& outputImage, unsigned int 
     }
 }
 
-void gradientDirection(const cv::Mat& derivX, const cv::Mat& derivY, cv::Mat& gradientDir, float treshold)
+void gradientDirection(const cv::Mat& derivX, const cv::Mat& derivY, cv::Mat& gradientDir)
 {
     gradientDir = cv::Mat(derivX.rows, derivX.cols, CV_8UC3);
 
     for (int i = 0; i < derivX.rows; i++)
         for (int j = 0; j < derivY.cols; j++)
         {
-            if (derivY.at<unsigned char>(i, j) <= treshold)
-                gradientDir.at<cv::Vec3b>(i, j) = cv::Vec3b(0, 0, 255);
-            else
-                gradientDir.at<cv::Vec3b>(i, j) = cv::Vec3b(2 * std::atan((float)derivX.at<unsigned char>(i, j) / (float)derivY.at<unsigned char>(i, j)) / M_PI * 255, 255, 255);
+            //if (derivY.at<unsigned char>(i, j) == 0 && derivX.at<unsigned char>(i, j) == 0)
+                //continue;
+
+            float hsl_angle = std::atan2((float)derivY.at<unsigned char>(i, j), (float)derivX.at<unsigned char>(i, j)) / M_PI * 180 * 360;
+            gradientDir.at<cv::Vec3b>(i, j) = cv::Vec3b(hsl_angle, 127, 255);
         }
 
-    cv::cvtColor(gradientDir, gradientDir, cv::COLOR_HSV2BGR);
+    cv::cvtColor(gradientDir, gradientDir, cv::COLOR_HLS2BGR);
 }
 
-void gradientMagnitude(const cv::Mat& derivX, const cv::Mat& derivY, cv::Mat& gradientMagnitude, float treshold)
+void gradientMagnitude(const cv::Mat& derivX, const cv::Mat& derivY, cv::Mat& gradientMagnitude)
 {
-    /*gradientMagnitude = cv::Mat(derivX.rows, derivX.cols, CV_8UC3);
+    gradientMagnitude = cv::Mat(derivX.rows, derivX.cols, derivX.type());
+
+    unsigned short int* temp_nonnormalized = new unsigned short int[gradientMagnitude.rows * gradientMagnitude.cols];
+
+    float max_value = -INFINITY;
+    for (int i = 0; i < derivX.rows; i++)
+    {
+        for (int j = 0; j < derivX.cols; j++)
+        {
+            float x = (float)derivX.at<unsigned char>(i, j);
+            float y = (float)derivY.at<unsigned char>(i, j);
+
+            float magnitude = std::sqrt(x * x + y * y);
+            if (max_value < magnitude)
+                max_value = magnitude;
+
+            temp_nonnormalized[i * derivX.cols + j] = magnitude;
+        }
+    }
 
     for (int i = 0; i < derivX.rows; i++)
-        for (int j = 0; j < derivY.cols; j++)
+    {
+        for (int j = 0; j < derivX.cols; j++)
         {
-            float value = std::sqrt((float)derivX.at<unsigned char>(i, j) * (float)derivX.at<unsigned char>(i, j) + (float)derivY.at<unsigned char>(i, j) * (float)derivY.at<unsigned char>(i, j));
+            float value = temp_nonnormalized[i * derivX.cols + j] / max_value;
 
-            gradientDirection.at<cv::Vec3b>(i, j) = cv::Vec3b( * 255, 255, 255);
-        }*/
+            gradientMagnitude.at<unsigned char>(i, j) = value * 255;
+        }
+    }
+
+    delete[] temp_nonnormalized;
 }
 
 void tresholding(const cv::Mat& inputImage, cv::Mat& outputImage, unsigned int treshold)
@@ -243,6 +266,20 @@ void tresholding(const cv::Mat& inputImage, cv::Mat& outputImage, unsigned int t
         {
             unsigned char pixelValue = inputImage.at<unsigned char>(i, j);
             outputImage.at<unsigned char>(i, j) = pixelValue >= treshold ? 255 : 0;
+        }
+    }
+}
+
+void low_treshold(cv::Mat& input_image, cv::Mat& output_image, unsigned char threshold)
+{
+    output_image = cv::Mat(input_image.rows, input_image.cols, input_image.type());
+
+    for (int i = 0; i < input_image.rows; i++)
+    {
+        for (int j = 0; j < input_image.cols; j++)
+        {
+            unsigned char value = input_image.at<unsigned char>(i, j);
+            output_image.at<unsigned char>(i, j) = (value >= threshold ? value : 0);
         }
     }
 }
@@ -268,6 +305,33 @@ void sumImages(cv::Mat& outputSumImage, const cv::Mat& inputImage1, const cv::Ma
     }
 }
 
+void multiply_rgb_by_grayscale(const cv::Mat& input_rgb, const cv::Mat& input_grayscale, cv::Mat& output_image)
+{
+    output_image = cv::Mat(input_rgb.rows, input_rgb.cols, input_rgb.type());
+
+    for (int i = 0; i < input_rgb.rows; i++)
+    {
+        for (int j = 0; j < input_rgb.cols; j++)
+        {
+            //std::cout << input_grayscale.at<unsigned char>(i, j) / 255.0f << std::endl;
+            cv::Vec3b new_val = input_rgb.at<cv::Vec3b>(i, j) * (input_grayscale.at<unsigned char>(i, j) / 255.0f);
+
+
+            output_image.at<cv::Vec3b>(i, j) = new_val;
+        }
+    }
+}
+
+void normalize_grayscale_image(const cv::Mat& input_image, cv::Mat& output_image)
+{
+    double min_val, max_val;
+
+    cv::minMaxLoc(input_image, &min_val, &max_val);
+
+    output_image = cv::Mat(input_image.rows, input_image.cols, input_image.type());
+    output_image = input_image / max_val * 255;
+}
+
 void print_kernel(float** kernel, unsigned int kernel_size)
 {
     for (unsigned int i = 0; i < kernel_size; i++)
@@ -283,27 +347,57 @@ void print_kernel(float** kernel, unsigned int kernel_size)
 
 void kirshFilter(const cv::Mat& inputImage, cv::Mat& outputImage)
 {
-    /*static const float sobelKernelX[3][3] =
+    static const float kirschN[3][3] =
     {
-        {1, 0, -1},
-        {2, 0, -2},
-        {1, 0, -1}
+        {5, 5, 5},
+        {-3, 0, -3},
+        {-3, -3, -3}
     };
 
-    static const float sobelKernelY[3][3] =
+    static const float kirschNE[3][3] =
     {
-        {1, 2, 1},
-        {0, 0, 0},
-        {-1, -2, -1}
+        {5, 5, -3},
+        {5, 0, -3},
+        {-3, -3, -3}
     };
 
-    outputDerivX = cv::Mat(inputImage.rows, inputImage.cols, inputImage.type());
-    outputDerivY = cv::Mat(inputImage.rows, inputImage.cols, inputImage.type());
+    static const float kirschE[3][3] =
+    {
+        {5, -3, -3},
+        {5, 0,  -3},
+        {5, -3, -3}
+    };
 
-    convolution<3>(inputImage, outputDerivX, kirschX);
-    convolution<3>(inputImage, outputDerivY, sobelKernelY);
-    convolution<3>(inputImage, outputDerivY, sobelKernelY);
-    convolution<3>(inputImage, outputDerivY, sobelKernelY);*/
+    static const float kirschSE[3][3] =
+    {
+        {-3, -3, -3},
+        {5, 0, -3},
+        {5, 5, -3}
+    };
+
+    cv::Mat outputDerivN = cv::Mat(inputImage.rows, inputImage.cols, inputImage.type());
+    cv::Mat outputDerivNE = cv::Mat(inputImage.rows, inputImage.cols, inputImage.type());
+    cv::Mat outputDerivE= cv::Mat(inputImage.rows, inputImage.cols, inputImage.type());
+    cv::Mat outputDerivSE = cv::Mat(inputImage.rows, inputImage.cols, inputImage.type());
+    outputImage = cv::Mat(inputImage.rows, inputImage.cols, inputImage.type());
+
+    convolution<3>(inputImage, outputDerivN, kirschN);
+    convolution<3>(inputImage, outputDerivNE, kirschNE);
+    convolution<3>(inputImage, outputDerivE, kirschE);
+    convolution<3>(inputImage, outputDerivSE, kirschSE);
+
+    for (int i = 0; i < outputDerivN.rows; i++)
+    {
+        for (int j = 0; j < outputDerivN.cols; j++)
+        {
+            unsigned char N = outputDerivN.at<unsigned char>(i, j);
+            unsigned char NE = outputDerivNE.at<unsigned char>(i, j);
+            unsigned char E = outputDerivE.at<unsigned char>(i, j);
+            unsigned char SE = outputDerivSE.at<unsigned char>(i, j);
+
+            outputImage.at<unsigned char>(i, j) = std::max(N, std::max(NE, std::max(E, SE)));
+        }
+    }
 }
 
 void sobelFilter(const cv::Mat& inputImage, cv::Mat& outputDerivX, cv::Mat& outputDerivY)
