@@ -1,5 +1,7 @@
 #include "filters.hpp"
 
+#include <iostream>
+
 void readMask(unsigned int& maskSize, float*** kernel, std::string maskFilePath)
 {
     std::ifstream maskFile(maskFilePath);
@@ -146,7 +148,7 @@ void compute_gaussian_kernel(float** kernel, unsigned int kernel_size, float sig
 void gaussianBlur(const cv::Mat& inputImage, cv::Mat& outputImage, unsigned int kernel_size, float sigma) {
 
     if (kernel_size == 0 || (kernel_size % 2 == 0)) {
-        throw std::invalid_argument("The kernel size needs to be stricly positive and odd.");
+        std::cout << "The kernel size needs to be stricly positive and odd.";
 
         return;
     }
@@ -211,10 +213,14 @@ void gradientDirection(const cv::Mat& derivX, const cv::Mat& derivY, cv::Mat& gr
     for (int i = 0; i < derivX.rows; i++)
         for (int j = 0; j < derivY.cols; j++)
         {
-            //if (derivY.at<unsigned char>(i, j) == 0 && derivX.at<unsigned char>(i, j) == 0)
-                //continue;
+            if (derivY.at<unsigned char>(i, j) == 0 && derivX.at<unsigned char>(i, j) == 0)
+            {
+                gradientDir.at<cv::Vec3b>(i, j) = cv::Vec3b(0, 0, 0);
 
-            float hsl_angle = std::atan2((float)derivY.at<unsigned char>(i, j), (float)derivX.at<unsigned char>(i, j)) / M_PI * 180 * 360;
+                continue;
+            }
+
+            float hsl_angle = (std::atan2((float)derivY.at<unsigned char>(i, j), (float)derivX.at<unsigned char>(i, j)) + M_PI) / 2 * 360;
             gradientDir.at<cv::Vec3b>(i, j) = cv::Vec3b(hsl_angle, 127, 255);
         }
 
@@ -254,6 +260,24 @@ void gradientMagnitude(const cv::Mat& derivX, const cv::Mat& derivY, cv::Mat& gr
     }
 
     delete[] temp_nonnormalized;
+}
+
+void angleMatrix(const cv::Mat& derivX, const cv::Mat& derivY, cv::Mat& angle_matrix)
+{
+    angle_matrix = cv::Mat(derivX.rows, derivX.cols, CV_8U);
+
+    for (int i = 0; i < derivX.rows; i++)
+    {
+        for (int j = 0; j < derivX.cols; j++)
+        {
+            unsigned char y, x;
+            x = derivX.at<unsigned char>(i, j);
+            y = derivY.at<unsigned char>(i, j);
+
+            //Angle between 0 and 180 degrees
+            angle_matrix.at<unsigned char>(i, j) = (std::atan2(y, x) + M_PI) / 2 * 180;
+        }
+    }
 }
 
 void tresholding(const cv::Mat& inputImage, cv::Mat& outputImage, unsigned int treshold)
@@ -322,6 +346,15 @@ void multiply_rgb_by_grayscale(const cv::Mat& input_rgb, const cv::Mat& input_gr
     }
 }
 
+void binarize(const cv::Mat& edge_image, cv::Mat& out_binarized)
+{
+    out_binarized = cv::Mat(edge_image.rows, edge_image.cols, edge_image.type());
+
+    for (int i = 0; i < edge_image.rows; i++)
+        for (int j = 0; j < edge_image.cols; j++)
+            out_binarized.at<unsigned char>(i, j) = edge_image.at<unsigned char>(i, j) > 0 ? 255 : 0;
+}
+
 void normalize_grayscale_image(const cv::Mat& input_image, cv::Mat& output_image)
 {
     double min_val, max_val;
@@ -330,6 +363,23 @@ void normalize_grayscale_image(const cv::Mat& input_image, cv::Mat& output_image
 
     output_image = cv::Mat(input_image.rows, input_image.cols, input_image.type());
     output_image = input_image / max_val * 255;
+}
+
+void normalize_grayscale_u16_to_u8(const cv::Mat& u16_image, cv::Mat& u8_image_normalized)
+{
+    double min_val, max_val;
+
+    cv::minMaxLoc(u16_image, &min_val, &max_val);
+
+    u8_image_normalized = cv::Mat(u16_image.rows, u16_image.cols, CV_8U);
+
+    for (int i = 0; i < u16_image.rows; i++)
+    {
+        for (int j = 0; j < u16_image.cols; j++)
+        {
+            u8_image_normalized.at<unsigned char>(i, j) = u16_image.at<unsigned short int>(i, j) / max_val * 255;
+        }
+    }
 }
 
 void print_kernel(float** kernel, unsigned int kernel_size)
@@ -342,6 +392,195 @@ void print_kernel(float** kernel, unsigned int kernel_size)
         }
 
         std::cout << std::endl;
+    }
+}
+
+void non_maximum_suppresion(const cv::Mat& gradientIntensityNorm, const cv::Mat& angle_matrix, cv::Mat& non_maxi_suppressed)
+{
+    non_maxi_suppressed = cv::Mat(gradientIntensityNorm.rows, gradientIntensityNorm.cols, gradientIntensityNorm.type());
+    non_maxi_suppressed.setTo(cv::Scalar(0, 0, 0));
+
+    for (int i = 1; i < gradientIntensityNorm.rows - 1; i++)
+    {
+        for (int j = 1; j < gradientIntensityNorm.cols - 1; j++)
+        {
+            unsigned char current_pixel = gradientIntensityNorm.at<unsigned char>(i, j);
+            unsigned char angle = angle_matrix.at<unsigned char>(i, j);
+
+            unsigned char left_pixel = 0, right_pixel = 0;
+            if ((angle > 0 && angle < 22.5) || (angle >= 157.5 && angle <= 180))//Edge direction = horizontal
+            {
+                left_pixel = gradientIntensityNorm.at<unsigned char>(i, j - 1);
+                right_pixel = gradientIntensityNorm.at<unsigned char>(i, j + 1);
+            }
+            else if (angle >= 22.5 && angle < 67.5)//Edge direction = NW / SE
+            {
+                left_pixel = gradientIntensityNorm.at<unsigned char>(i + 1, j - 1);
+                right_pixel = gradientIntensityNorm.at<unsigned char>(i - 1, j + 1);
+            }
+            else if (angle >= 67.5 && angle < 112.5)//Edge direction = vertical
+            {
+                left_pixel = gradientIntensityNorm.at<unsigned char>(i + 1, j);
+                right_pixel = gradientIntensityNorm.at<unsigned char>(i - 1, j);
+            }
+            else if (angle >= 112.5 && angle < 157.5)//Edge direction = NE / SW
+            {
+                left_pixel = gradientIntensityNorm.at<unsigned char>(i - 1, j - 1);
+                right_pixel = gradientIntensityNorm.at<unsigned char>(i + 1, j + 1);
+            }
+
+            if (left_pixel > current_pixel || right_pixel > current_pixel)
+                non_maxi_suppressed.at<unsigned char>(i, j) = 0;
+            else
+                non_maxi_suppressed.at<unsigned char>(i, j) = current_pixel;
+        }
+    }
+}
+
+void double_threshold(const cv::Mat& non_maxi_suppressed, float low_threshold, float high_threshold, cv::Mat& double_thresholded)
+{
+    double_thresholded = cv::Mat(non_maxi_suppressed.rows, non_maxi_suppressed.cols, CV_8U);
+    for (int i = 0; i < non_maxi_suppressed.rows; i++)
+    {
+        for (int j = 0; j < non_maxi_suppressed.cols; j++)
+        {
+            unsigned char current_pixel = non_maxi_suppressed.at<unsigned char>(i, j);
+
+            double_thresholded.at<unsigned char>(i, j) = current_pixel < low_threshold ? 0 : (current_pixel > high_threshold ? 255 : 127);
+        }
+    }
+}
+
+void hysteresis(const cv::Mat& double_tresholded, cv::Mat& output_hysteresis)
+{
+    output_hysteresis = cv::Mat(double_tresholded.rows, double_tresholded.cols, CV_8U);
+    output_hysteresis.setTo(cv::Scalar(0, 0, 0));
+
+    for (int i = 1; i < double_tresholded.rows - 1; i++)
+    {
+        for (int j = 1; j < double_tresholded.cols - 1; j++)
+        {
+            unsigned char current_pixel = double_tresholded.at<unsigned char>(i, j);
+
+            //Weak edge that needs to be tresholded
+            if (double_tresholded.at<unsigned char>(i, j) == 127)
+            {
+                //Looking for a strong pixel in the vicinity of the current pixel
+                bool found = false;
+                for (int ii = i - 1; ii <= i + 1; ii++)
+                {
+                    for (int jj = j - 1; jj <= j + 1; jj++)
+                    {
+                        //Is it a strong pixel ?
+                        if (double_tresholded.at<unsigned char>(ii, jj) == 255)
+                        {
+                            output_hysteresis.at<unsigned char>(i, j) = 255;
+
+                            found = true;
+
+                            break;
+                        }
+                    }
+
+                    if (found)
+                        break;
+                }
+
+                //We didn't find a strong pixel around the current pixel
+                if (!found)
+                    output_hysteresis.at<unsigned char>(i, j) = 0;
+            }
+            else
+                output_hysteresis.at<unsigned char>(i, j) = current_pixel;
+        }
+    }
+}
+
+void cannyEdgeDetection(const cv::Mat& inputImagePreprocessed, unsigned char low_threshold, unsigned char high_threshold, cv::Mat& outputCanny)
+{
+    cv::Mat derivX, derivY;
+    sobelFilter(inputImagePreprocessed, derivX, derivY);
+
+
+    cv::Mat gradientIntensity, gradientIntensityNorm;
+    gradientMagnitude(derivX, derivY, gradientIntensity);
+    normalize_grayscale_image(gradientIntensity, gradientIntensityNorm);
+
+
+    cv::Mat angle_matrix, non_maxi_suppressed;
+    angleMatrix(derivX, derivY, angle_matrix);
+    non_maximum_suppresion(gradientIntensityNorm, angle_matrix, non_maxi_suppressed);
+
+
+    cv::Mat double_thresholded;
+    double_threshold(non_maxi_suppressed, low_threshold, high_threshold, double_thresholded);
+    hysteresis(double_thresholded, outputCanny);
+}
+
+void houghTransform(const cv::Mat& binarized_edge_image, int nb_theta, int nb_rho, cv::Mat& hough_space, cv::Mat& output_lines)
+{
+    float img_hypot = std::hypot(binarized_edge_image.rows, binarized_edge_image.cols);
+    float theta_step = 180.0f / nb_theta;
+
+    hough_space = cv::Mat(nb_theta, nb_rho, CV_16U);
+    hough_space.setTo(cv::Scalar(0, 0, 0));
+
+    for (int i = 0; i < binarized_edge_image.rows; i++)
+    {
+        for (int j = 0; j < binarized_edge_image.cols; j++)
+        {
+            //Is this is an edge point
+            if (binarized_edge_image.at<unsigned char>(i, j) == 255)
+            {
+                for (unsigned int theta_index = 0; theta_index < nb_theta; theta_index++)
+                {
+                    float theta = theta_step * theta_index;
+                    float rho = j * std::cos(theta / 180 * M_PI) + i * std::sin(theta / 180 * M_PI);
+
+                    int rho_index = std::abs(rho) / img_hypot * nb_rho;
+
+                    hough_space.at<unsigned short int>(theta_index, rho_index)++;
+                }
+            }
+        }
+    }
+
+    double minValue, maxValue;
+    cv::minMaxLoc(hough_space, &minValue, &maxValue);
+
+    float threshold = maxValue * 0.75;
+    std::vector<float> rhos, thetas;//Rhos and thetas of the lines detected in the image
+
+    for (int i = 0; i < hough_space.rows; i++)
+    {
+        for (int j = 0; j < hough_space.cols; j++)
+        {
+            if (hough_space.at<unsigned short int>(i, j) >= threshold)
+            {
+                rhos.push_back((float)j / nb_rho * img_hypot * 2 - img_hypot);
+                thetas.push_back((float)i / nb_theta * 180);
+            }
+        }
+    }
+
+    output_lines = cv::Mat(binarized_edge_image.rows, binarized_edge_image.cols, binarized_edge_image.type());
+    output_lines.setTo(cv::Scalar(0, 0, 0));
+    rhos.push_back(binarized_edge_image.rows / 2);
+    thetas.push_back(45);
+    for (int i = 0; i < rhos.size(); i++)
+    {
+        float rho = rhos.at(i);
+        float theta = thetas.at(i);
+
+        std::cout << "rho, theta: " << rho << ", " << theta << std::endl;
+
+        cv::Point a(0, rho / std::sin(theta));
+        cv::Point b(binarized_edge_image.cols - 1, (rho - (binarized_edge_image.cols - 1) * std::cos(theta))/ std::sin(theta));
+
+        if (i == rhos.size() - 1)
+            cv::line(output_lines, a, b, cv::Scalar(127, 0, 0), 1);
+        else
+            cv::line(output_lines, a, b, cv::Scalar(255, 255, 255), 1, cv::LINE_AA);
     }
 }
 
