@@ -99,26 +99,39 @@ int main(int argc, char** argv)
         cv::Mat outputDerivXNorm, outputDerivYNorm, outputDerivXThresh, outputDerivYThresh;
         cv::Mat gradient_magnitude, gradient_direction, gradient_composite;
 
-        normalize_grayscale_image(outputDerivX, outputDerivXNorm);
-        normalize_grayscale_image(outputDerivY, outputDerivYNorm);
+        //normalize_grayscale_image(outputDerivX, outputDerivXNorm);
+        //normalize_grayscale_image(outputDerivY, outputDerivYNorm);
+        int x = 119, y = 102;
+        std::cout << "outputDerivX: " <<  outputDerivX.at<short int>(y, x) << " outputDerivY: " << outputDerivY.at<short int>(y, x) << std::endl;
 
-        gradientMagnitude(outputDerivX, outputDerivY, gradient_magnitude);
-        gradientDirection(outputDerivXNorm, outputDerivYNorm, gradient_direction);
+        gradientMagnitudeNormalized(outputDerivX, outputDerivY, gradient_magnitude);
+        gradientDirection(outputDerivX, outputDerivY, gradient_direction);
         multiply_rgb_by_grayscale(gradient_direction, gradient_magnitude, gradient_composite);
         binarize(gradient_magnitude, outputBinarized);
 
-        cv::imshow("X", outputDerivXNorm);
-        cv::imshow("Y", outputDerivYNorm);
+        cv::Mat test_x = cv::Mat(outputDerivX.rows, outputDerivX.cols, CV_8U);
+        for (int i = 0; i < outputDerivX.rows; i++)
+            for (int j = 0; j < outputDerivX.cols; j++)
+                test_x.at<unsigned char>(i, j) = std::abs(outputDerivX.at<short int>(i, j));
+
+        cv::imshow("X", test_x);
+        //cv::imshow("X", outputDerivX);
+        cv::imshow("Y", outputDerivY);
         cv::imshow("gradientMagnitude/edge image", gradient_magnitude);
         cv::imshow("edge image binarized", outputBinarized);
         cv::imshow("gradientDirection", gradient_direction);
+        cv::imwrite("gradient_direction.png", gradient_direction);//TODO remove
         cv::imshow("gradientDirection*Magnitude", gradient_composite);
     }
 
+    int size_x = 512 / 4;
+    int size_y = 512 / 4;
+
     cv::Mat hough_space, outputLines;
-    outputBinarized = cv::Mat(512 / 4, 512 / 4, CV_8U);
+    outputBinarized = cv::Mat(size_x, size_y, CV_8U);
     outputBinarized.setTo(cv::Scalar(0, 0, 0));
 
+/*
     cv::line(outputBinarized, cv::Point(64 / 4, 64 / 4), cv::Point(96 / 4, 64 / 4), cv::Scalar(255, 255, 255));
     cv::line(outputBinarized, cv::Point(64 / 4, 64 / 4), cv::Point(64 / 4, 96 / 4), cv::Scalar(255, 255, 255));
     cv::line(outputBinarized, cv::Point(96 / 4, 64 / 4), cv::Point(96 / 4, 96 / 4), cv::Scalar(255, 255, 255));
@@ -128,6 +141,10 @@ int main(int argc, char** argv)
     cv::line(outputBinarized, cv::Point(32 / 4, 32 / 4), cv::Point(32 / 4, 48 / 4), cv::Scalar(255, 255, 255));
     cv::line(outputBinarized, cv::Point(48 / 4, 32 / 4), cv::Point(48 / 4, 48 / 4), cv::Scalar(255, 255, 255));
     cv::line(outputBinarized, cv::Point(32 / 4, 48 / 4), cv::Point(48 / 4, 48 / 4), cv::Scalar(255, 255, 255));
+    */
+
+    cv::line(outputBinarized, cv::Point(size_x / 4, size_y / 2), cv::Point(size_x / 4 * 3, size_y / 2), cv::Scalar(255, 255, 255));
+    cv::imshow("Input Hough", outputBinarized);
 
     cv::Mat hough_space_norm;
     houghTransform(outputBinarized, 180*4, 180*4, hough_space, outputLines);

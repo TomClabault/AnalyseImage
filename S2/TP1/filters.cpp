@@ -65,7 +65,7 @@ void convolution(const cv::Mat& inputImage, cv::Mat& outputImage, float** kernel
 
                     //Si on est en train de d�passer des bords de l'image
                     if (y_pos < 0 || y_pos >= inputImage.rows || x_pos < 0 || x_pos >= inputImage.cols)
-                        //On va consid�rer que la valeur du pixel est la m�me que celle du pixel courant
+                        //On va considerer que la valeur du pixel est la meme que celle du pixel courant
                         pixel_value = current_pixel_value;
                     else
                         pixel_value = inputImage.at<unsigned char>(y_pos, x_pos);
@@ -74,13 +74,18 @@ void convolution(const cv::Mat& inputImage, cv::Mat& outputImage, float** kernel
                 }
             }
 
+
             float new_value = (new_pixel_value / kernel_sum);
             outputImage.at<unsigned char>(y_img, x_img) = (unsigned char)(new_value < 0 ? 0 : new_value);
         }
     }
 }
 
-template <size_t N>
+/**
+ * N is the size of the kernel for the convolution
+ * T is the type of the pixels of the output image
+ */
+template <size_t N, typename T>
 void convolution(const cv::Mat& inputImage, cv::Mat& outputImage, const float kernel[N][N])
 {
     int half_kernel_size = N / 2;
@@ -94,6 +99,9 @@ void convolution(const cv::Mat& inputImage, cv::Mat& outputImage, const float ke
         for (int x_img = 0; x_img < inputImage.cols; x_img++) {
             unsigned char current_pixel_value = inputImage.at<unsigned char>(y_img, x_img);
 
+            if (x_img == 157 && y_img == 58)
+                std::cout << "pixel_value: " << (int)inputImage.at<unsigned char>(y_img, x_img) << std::endl;
+
             float new_pixel_value = 0;
             for (int y_kernel = 0; y_kernel < N; y_kernel++) {
                 for (int x_kernel = 0; x_kernel < N; x_kernel++) {
@@ -103,11 +111,11 @@ void convolution(const cv::Mat& inputImage, cv::Mat& outputImage, const float ke
                     int y_pos = y_img + y_kernel_shift;
                     int x_pos = x_img + x_kernel_shift;
 
-                    unsigned char pixel_value;
+                    T pixel_value;
 
-                    //Si on est en train de d�passer des bords de l'image
+                    //Si on est en train de depasser des bords de l'image
                     if (y_pos < 0 || y_pos >= inputImage.rows || x_pos < 0 || x_pos >= inputImage.cols)
-                        //On va consid�rer que la valeur du pixel est la m�me que celle du pixel courant
+                        //On va considerer que la valeur du pixel est la meme que celle du pixel courant
                         pixel_value = current_pixel_value;
                     else
                         pixel_value = inputImage.at<unsigned char>(y_pos, x_pos);
@@ -117,7 +125,7 @@ void convolution(const cv::Mat& inputImage, cv::Mat& outputImage, const float ke
             }
 
             float new_value = (new_pixel_value / kernel_sum);
-            outputImage.at<unsigned char>(y_img, x_img) = (unsigned char)(new_value < 0 ? 0 : (new_value > 255 ? 255 : new_value));
+            outputImage.at<T>(y_img, x_img) = new_value;
         }
     }
 }
@@ -209,27 +217,54 @@ void gaussianBlur(const cv::Mat& inputImage, cv::Mat& outputImage, unsigned int 
 void gradientDirection(const cv::Mat& derivX, const cv::Mat& derivY, cv::Mat& gradientDir)
 {
     gradientDir = cv::Mat(derivX.rows, derivX.cols, CV_8UC3);
+    float min = INFINITY, max = -INFINITY;
+    float minatan = INFINITY, maxatan = -INFINITY;
 
     for (int i = 0; i < derivX.rows; i++)
         for (int j = 0; j < derivY.cols; j++)
         {
-            if (derivY.at<unsigned char>(i, j) == 0 && derivX.at<unsigned char>(i, j) == 0)
+            if (derivY.at<short int>(i, j) == 0 && derivX.at<short int>(i, j) == 0)
             {
                 gradientDir.at<cv::Vec3b>(i, j) = cv::Vec3b(0, 0, 0);
 
                 continue;
             }
 
-            float hsl_angle = (std::atan2((float)derivY.at<unsigned char>(i, j), (float)derivX.at<unsigned char>(i, j)) + M_PI) / 2 * 360;
-            gradientDir.at<cv::Vec3b>(i, j) = cv::Vec3b(hsl_angle, 127, 255);
+            if (j == 159 && i == 67)
+            {
+                std::cout << "y: " << (float)derivY.at<short int>(i, j) << ", x: " << (float)derivX.at<short int>(i, j) << std::endl;
+            }
+
+            float hsl_angle = (std::atan2((float)derivY.at<short int>(i, j), (float)derivX.at<short int>(i, j)) + M_PI) / 2 / M_PI * 360;
+            cv::Vec3b hsl_value = cv::Vec3b(hsl_angle / 2, 127, 255);
+
+            cv::Mat hsl_mat = cv::Mat(1, 1, CV_8UC3); hsl_mat.at<cv::Vec3b>(0, 0) = hsl_value;
+            cv::Mat bgr_mat = cv::Mat(1, 1, CV_8UC3);
+            cv::cvtColor(hsl_mat, bgr_mat, cv::COLOR_HLS2BGR);
+
+            gradientDir.at<cv::Vec3b>(i, j) = cv::Vec3b(hsl_angle / 2, 127, 255);
+
+            float angleatan = std::atan2((float)derivY.at<short int>(i, j), (float)derivX.at<short int>(i, j));
+            if (minatan > angleatan)
+                minatan = angleatan;
+            if (maxatan < angleatan)
+                maxatan = angleatan;
+
+            if (min > hsl_angle)
+                min = hsl_angle;
+            if( max < hsl_angle)
+                max = hsl_angle;
         }
+
+    std::cout << "min hsl angle: " << min << ", max hsl angle: " << max << std::endl;
+    std::cout << "min atan: " << minatan << ", max atan: " << maxatan << std::endl;
 
     cv::cvtColor(gradientDir, gradientDir, cv::COLOR_HLS2BGR);
 }
 
-void gradientMagnitude(const cv::Mat& derivX, const cv::Mat& derivY, cv::Mat& gradientMagnitude)
+void gradientMagnitudeNormalized(const cv::Mat& derivX, const cv::Mat& derivY, cv::Mat& gradientMagnitude)
 {
-    gradientMagnitude = cv::Mat(derivX.rows, derivX.cols, derivX.type());
+    gradientMagnitude = cv::Mat(derivX.rows, derivX.cols, CV_8U);
 
     unsigned short int* temp_nonnormalized = new unsigned short int[gradientMagnitude.rows * gradientMagnitude.cols];
 
@@ -238,8 +273,8 @@ void gradientMagnitude(const cv::Mat& derivX, const cv::Mat& derivY, cv::Mat& gr
     {
         for (int j = 0; j < derivX.cols; j++)
         {
-            float x = (float)derivX.at<unsigned char>(i, j);
-            float y = (float)derivY.at<unsigned char>(i, j);
+            float x = (float)derivX.at<short int>(i, j);
+            float y = (float)derivY.at<short int>(i, j);
 
             float magnitude = std::sqrt(x * x + y * y);
             if (max_value < magnitude)
@@ -503,7 +538,7 @@ void cannyEdgeDetection(const cv::Mat& inputImagePreprocessed, unsigned char low
 
 
     cv::Mat gradientIntensity, gradientIntensityNorm;
-    gradientMagnitude(derivX, derivY, gradientIntensity);
+    gradientMagnitudeNormalized(derivX, derivY, gradientIntensity);
     normalize_grayscale_image(gradientIntensity, gradientIntensityNorm);
 
 
@@ -565,8 +600,6 @@ void houghTransform(const cv::Mat& binarized_edge_image, int nb_theta, int nb_rh
 
     output_lines = cv::Mat(binarized_edge_image.rows, binarized_edge_image.cols, binarized_edge_image.type());
     output_lines.setTo(cv::Scalar(0, 0, 0));
-    rhos.push_back(binarized_edge_image.rows / 2);
-    thetas.push_back(45);
     for (int i = 0; i < rhos.size(); i++)
     {
         float rho = rhos.at(i);
@@ -614,27 +647,27 @@ void kirshFilter(const cv::Mat& inputImage, cv::Mat& outputImage)
         {5, 5, -3}
     };
 
-    cv::Mat outputDerivN = cv::Mat(inputImage.rows, inputImage.cols, inputImage.type());
-    cv::Mat outputDerivNE = cv::Mat(inputImage.rows, inputImage.cols, inputImage.type());
-    cv::Mat outputDerivE= cv::Mat(inputImage.rows, inputImage.cols, inputImage.type());
-    cv::Mat outputDerivSE = cv::Mat(inputImage.rows, inputImage.cols, inputImage.type());
-    outputImage = cv::Mat(inputImage.rows, inputImage.cols, inputImage.type());
+    cv::Mat outputDerivN = cv::Mat(inputImage.rows, inputImage.cols, CV_16S);
+    cv::Mat outputDerivNE = cv::Mat(inputImage.rows, inputImage.cols, CV_16S);
+    cv::Mat outputDerivE= cv::Mat(inputImage.rows, inputImage.cols, CV_16S);
+    cv::Mat outputDerivSE = cv::Mat(inputImage.rows, inputImage.cols, CV_16S);
+    outputImage = cv::Mat(inputImage.rows, inputImage.cols, CV_8U);
 
-    convolution<3>(inputImage, outputDerivN, kirschN);
-    convolution<3>(inputImage, outputDerivNE, kirschNE);
-    convolution<3>(inputImage, outputDerivE, kirschE);
-    convolution<3>(inputImage, outputDerivSE, kirschSE);
+    convolution<3, short int>(inputImage, outputDerivN, kirschN);
+    convolution<3, short int>(inputImage, outputDerivNE, kirschNE);
+    convolution<3, short int>(inputImage, outputDerivE, kirschE);
+    convolution<3, short int>(inputImage, outputDerivSE, kirschSE);
 
     for (int i = 0; i < outputDerivN.rows; i++)
     {
         for (int j = 0; j < outputDerivN.cols; j++)
         {
-            unsigned char N = outputDerivN.at<unsigned char>(i, j);
-            unsigned char NE = outputDerivNE.at<unsigned char>(i, j);
-            unsigned char E = outputDerivE.at<unsigned char>(i, j);
-            unsigned char SE = outputDerivSE.at<unsigned char>(i, j);
+            short int N = outputDerivN.at<short int>(i, j);
+            short int NE = outputDerivNE.at<short int>(i, j);
+            short int E = outputDerivE.at<short int>(i, j);
+            short int SE = outputDerivSE.at<short int>(i, j);
 
-            outputImage.at<unsigned char>(i, j) = std::max(N, std::max(NE, std::max(E, SE)));
+            outputImage.at<short int>(i, j) = std::max(N, std::max(NE, std::max(E, SE)));
         }
     }
 }
@@ -655,11 +688,11 @@ void sobelFilter(const cv::Mat& inputImage, cv::Mat& outputDerivX, cv::Mat& outp
         {-1, -2, -1}
     };
 
-    outputDerivX = cv::Mat(inputImage.rows, inputImage.cols, inputImage.type());
-    outputDerivY = cv::Mat(inputImage.rows, inputImage.cols, inputImage.type());
+    outputDerivX = cv::Mat(inputImage.rows, inputImage.cols, CV_16S);
+    outputDerivY = cv::Mat(inputImage.rows, inputImage.cols, CV_16S);
 
-    convolution<3>(inputImage, outputDerivX, sobelKernelX);
-    convolution<3>(inputImage, outputDerivY, sobelKernelY);
+    convolution<3, short int>(inputImage, outputDerivX, sobelKernelX);
+    convolution<3, short int>(inputImage, outputDerivY, sobelKernelY);
 }
 
 void prewittFilter(const cv::Mat& inputImage, cv::Mat& outputDerivX, cv::Mat& outputDerivY)
@@ -678,9 +711,9 @@ void prewittFilter(const cv::Mat& inputImage, cv::Mat& outputDerivX, cv::Mat& ou
         {-1, -1, -1}
     };
 
-    outputDerivX = cv::Mat(inputImage.rows, inputImage.cols, inputImage.type());
-    outputDerivY = cv::Mat(inputImage.rows, inputImage.cols, inputImage.type());
+    outputDerivX = cv::Mat(inputImage.rows, inputImage.cols, CV_16S);
+    outputDerivY = cv::Mat(inputImage.rows, inputImage.cols, CV_16S);
 
-    convolution<3>(inputImage, outputDerivX, prewittKernelX);
-    convolution<3>(inputImage, outputDerivY, prewittKernelY);
+    convolution<3, short int>(inputImage, outputDerivX, prewittKernelX);
+    convolution<3, short int>(inputImage, outputDerivY, prewittKernelY);
 }

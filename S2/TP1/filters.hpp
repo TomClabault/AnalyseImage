@@ -21,7 +21,7 @@ void convolution(const cv::Mat& inputImage, cv::Mat& outputImage, float** kernel
 
 void gaussianBlur(const cv::Mat& inputImage, cv::Mat& outputBlurred, unsigned int kernel_size, float sigma);
 void gradientDirection(const cv::Mat& derivX, const cv::Mat& derivY, cv::Mat& gradientDir);
-void gradientMagnitude(const cv::Mat& derivX, const cv::Mat& derivY, cv::Mat& gradientMagnitude);
+void gradientMagnitudeNormalized(const cv::Mat& derivX, const cv::Mat& derivY, cv::Mat& gradientMagnitude);
 
 void houghTransform(const cv::Mat& binarized_edge_image, int nb_theta, int nb_rho, cv::Mat& hough_space, cv::Mat& output_lines);
 
