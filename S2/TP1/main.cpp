@@ -109,10 +109,10 @@ int main(int argc, char** argv)
         multiply_rgb_by_grayscale(gradient_direction, gradient_magnitude, gradient_composite);
         binarize(gradient_magnitude, outputBinarized);
 
-        cv::Mat test_x = cv::Mat(outputDerivX.rows, outputDerivX.cols, CV_8U);
-        for (int i = 0; i < outputDerivX.rows; i++)
-            for (int j = 0; j < outputDerivX.cols; j++)
-                test_x.at<unsigned char>(i, j) = std::abs(outputDerivX.at<short int>(i, j));
+        cv::Mat test_x = cv::abs(outputDerivX);// cv::Mat(outputDerivX.rows, outputDerivX.cols, CV_8U);
+        //for (int i = 0; i < outputDerivX.rows; i++)
+            //for (int j = 0; j < outputDerivX.cols; j++)
+                //test_x.at<unsigned char>(i, j) = std::abs(outputDerivX.at<short int>(i, j));
 
         cv::imshow("X", test_x);
         //cv::imshow("X", outputDerivX);
@@ -128,8 +128,8 @@ int main(int argc, char** argv)
     int size_y = 512 / 4;
 
     cv::Mat hough_space, outputLines;
-    outputBinarized = cv::Mat(size_x, size_y, CV_8U);
-    outputBinarized.setTo(cv::Scalar(0, 0, 0));
+    //outputBinarized = cv::Mat(size_x, size_y, CV_8U);
+    //outputBinarized.setTo(cv::Scalar(0, 0, 0));
 
 /*
     cv::line(outputBinarized, cv::Point(64 / 4, 64 / 4), cv::Point(96 / 4, 64 / 4), cv::Scalar(255, 255, 255));

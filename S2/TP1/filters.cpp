@@ -240,7 +240,7 @@ void gradientDirection(const cv::Mat& derivX, const cv::Mat& derivY, cv::Mat& gr
 
             cv::Mat hsl_mat = cv::Mat(1, 1, CV_8UC3); hsl_mat.at<cv::Vec3b>(0, 0) = hsl_value;
             cv::Mat bgr_mat = cv::Mat(1, 1, CV_8UC3);
-            cv::cvtColor(hsl_mat, bgr_mat, cv::COLOR_HLS2BGR);
+            cv::cvtColor(hsl_mat, bgr_mat, cv::COLOR_HSV2BGR);
 
             gradientDir.at<cv::Vec3b>(i, j) = cv::Vec3b(hsl_angle / 2, 127, 255);
 
@@ -572,7 +572,7 @@ void houghTransform(const cv::Mat& binarized_edge_image, int nb_theta, int nb_rh
                     float theta = theta_step * theta_index;
                     float rho = j * std::cos(theta / 180 * M_PI) + i * std::sin(theta / 180 * M_PI);
 
-                    int rho_index = std::abs(rho) / img_hypot * nb_rho;
+                    int rho_index = (rho + img_hypot) / img_hypot / 2 * nb_rho;
 
                     hough_space.at<unsigned short int>(theta_index, rho_index)++;
                 }
@@ -583,7 +583,7 @@ void houghTransform(const cv::Mat& binarized_edge_image, int nb_theta, int nb_rh
     double minValue, maxValue;
     cv::minMaxLoc(hough_space, &minValue, &maxValue);
 
-    float threshold = maxValue * 0.75;
+    float threshold = maxValue * 0.5;
     std::vector<float> rhos, thetas;//Rhos and thetas of the lines detected in the image
 
     for (int i = 0; i < hough_space.rows; i++)
@@ -607,8 +607,11 @@ void houghTransform(const cv::Mat& binarized_edge_image, int nb_theta, int nb_rh
 
         std::cout << "rho, theta: " << rho << ", " << theta << std::endl;
 
-        cv::Point a(0, rho / std::sin(theta));
-        cv::Point b(binarized_edge_image.cols - 1, (rho - (binarized_edge_image.cols - 1) * std::cos(theta))/ std::sin(theta));
+        cv::Point a(0, rho / std::sin(theta / 180 * M_PI));
+        cv::Point b(binarized_edge_image.cols - 1, (rho - (binarized_edge_image.cols - 1) * std::cos(theta / 180 * M_PI))/ std::sin(theta / 180 * M_PI));
+
+        //r = x cos + y sin
+        //y = (r - x cos) / sin
 
         if (i == rhos.size() - 1)
             cv::line(output_lines, a, b, cv::Scalar(127, 0, 0), 1);
