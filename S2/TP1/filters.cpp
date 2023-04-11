@@ -315,7 +315,7 @@ void angleMatrix(const cv::Mat& derivX, const cv::Mat& derivY, cv::Mat& angle_ma
     }
 }
 
-void tresholding(const cv::Mat& inputImage, cv::Mat& outputImage, unsigned int treshold)
+void thresholding(const cv::Mat& inputImage, cv::Mat& outputImage, unsigned int treshold)
 {
     outputImage = cv::Mat(inputImage.rows, inputImage.cols, inputImage.type());
 
@@ -325,6 +325,107 @@ void tresholding(const cv::Mat& inputImage, cv::Mat& outputImage, unsigned int t
         {
             unsigned char pixelValue = inputImage.at<unsigned char>(i, j);
             outputImage.at<unsigned char>(i, j) = pixelValue >= treshold ? 255 : 0;
+        }
+    }
+}
+
+void local_mean_thresholding(const cv::Mat& input_image, cv::Mat& output_image, unsigned int neighborghood_size, unsigned char C)
+{
+    output_image = cv::Mat(input_image.rows, input_image.cols, CV_8U);
+
+    int half_neighborhood_size = neighborghood_size / 2;
+    for (int y = 0; y < input_image.rows; y++)
+    {
+        for (int x = 0; x < input_image.cols; x++)
+        {
+            unsigned char current_pixel_value = input_image.at<unsigned char>(y, x);
+            float sum = 0.0f;
+
+            for (int i = -half_neighborhood_size; i <= half_neighborhood_size; i++)
+            {
+                for (int j = -half_neighborhood_size; j <= half_neighborhood_size; j++)
+                {
+                    unsigned char neighbor_pixel_value;
+
+                    //If we're out of the boundaries of the image, we're going to consider
+                    //the pixel that is outside the boundaries as having the same value as
+                    //the current pixel
+                    if (i + y < 0 || y + i >= input_image.rows || x + j < 0 || x + j >= input_image.cols)
+                        neighbor_pixel_value = current_pixel_value;
+                    else
+                        neighbor_pixel_value = input_image.at<unsigned char>(i + y, j + x);
+
+                    sum += neighbor_pixel_value;
+                }
+            }
+
+            unsigned char threshold = sum / (neighborghood_size * neighborghood_size);
+            threshold -= C;
+            threshold = std::min(std::max(threshold, (unsigned char)0), (unsigned char)255);
+
+            output_image.at<unsigned char>(y, x) = current_pixel_value <= threshold ? 0 : 255;
+        }
+    }
+}
+
+void compute_histogram(const cv::Mat& input_image, unsigned int* histogram)
+{
+    memset(histogram, 0, 256 * sizeof(unsigned int));
+
+    for (int i = 0; i < input_image.rows; i++)
+        for (int j = 0; j < input_image.cols; j++)
+            histogram[input_image.at<unsigned char>(i, j)]++;
+}
+
+void global_otsu_thresholding(const cv::Mat& input_image, cv::Mat& output_thresholded_image)
+{
+    unsigned int histogram[256];
+    float max_variance = -INFINITY;
+    int best_threshold;
+
+    compute_histogram(input_image, histogram);
+    //for (int i = 0; i < 256; i++)
+        //std::cout << (int)histogram[i] << ", ";
+    //std::exit(0);
+
+    for (int threshold = 0; threshold <= 254; threshold++)
+    {
+        int background_pixel_count = 0;
+        for (int i = 0; i <= threshold; i++)
+            background_pixel_count += histogram[i];
+
+        float wb = (float)background_pixel_count / (input_image.rows * input_image.cols);//Weight background
+        float wf = 1 - wb;//Weight foreground
+
+        float mub = 0.0f;//Mean intensity of the background
+        float muf = 0.0f;//Mean intensity of the foreground
+        for (int i = 0; i <= threshold; i++)
+            mub += histogram[i] * i;
+        mub /= background_pixel_count;
+
+        for (int i = threshold + 1; i <= 255; i++)
+            muf += histogram[i] * i;
+        muf /= (input_image.rows * input_image.cols - background_pixel_count);
+
+        float variance = wb * wf * (mub - muf) * (mub - muf);
+        std::cout << wb << ", " << wf << ", " << mub << ", " << muf << ", " << variance << std::endl;
+
+        if (variance > max_variance)
+        {
+            max_variance = variance;
+            best_threshold = threshold;
+        }
+    }
+
+    std::cout << best_threshold << std::endl;
+    output_thresholded_image = cv::Mat(input_image.rows, input_image.cols, CV_8U);
+    for (int y = 0; y < input_image.rows; y++)
+    {
+        for (int x = 0; x < input_image.cols; x++)
+        {
+            unsigned char current_pixel_value = input_image.at<unsigned char>(y, x);
+
+            output_thresholded_image.at<unsigned char>(y, x) = current_pixel_value < best_threshold ? 0 : 255;
         }
     }
 }
@@ -372,9 +473,7 @@ void multiply_rgb_by_grayscale(const cv::Mat& input_rgb, const cv::Mat& input_gr
     {
         for (int j = 0; j < input_rgb.cols; j++)
         {
-            //std::cout << input_grayscale.at<unsigned char>(i, j) / 255.0f << std::endl;
             cv::Vec3b new_val = input_rgb.at<cv::Vec3b>(i, j) * (input_grayscale.at<unsigned char>(i, j) / 255.0f);
-
 
             output_image.at<cv::Vec3b>(i, j) = new_val;
         }
@@ -616,13 +715,8 @@ void houghTransform(const cv::Mat& binarized_edge_image, int nb_theta, int nb_rh
         float rho = rhos.at(i);
         float theta = thetas.at(i);
 
-        std::cout << "rho, theta: " << rho << ", " << theta << std::endl;
-
         cv::Point a(0, rho / std::sin(theta / 180 * M_PI));
         cv::Point b(binarized_edge_image.cols - 1, (rho - (binarized_edge_image.cols - 1) * std::cos(theta / 180 * M_PI))/ std::sin(theta / 180 * M_PI));
-
-        //r = x cos + y sin
-        //y = (r - x cos) / sin
 
         if (i == rhos.size() - 1)
             cv::line(output_lines, a, b, cv::Scalar(127, 0, 0), 1);

@@ -17,6 +17,7 @@ void prewittFilter(const cv::Mat& inputImage, cv::Mat& outputDerivX, cv::Mat& ou
 void binarize(const cv::Mat& edge_image, cv::Mat& out_binarized);
 
 void cannyEdgeDetection(const cv::Mat& inputImagePreprocessed, unsigned char low_threshold, unsigned char high_threshold, cv::Mat& outputCanny);
+void compute_histogram(const cv::Mat& input_image, unsigned int* histogram);
 void convolution(const cv::Mat& inputImage, cv::Mat& outputImage, float** kernel, int kernel_size);
 
 void gaussianBlur(const cv::Mat& inputImage, cv::Mat& outputBlurred, unsigned int kernel_size, float sigma);
@@ -39,4 +40,15 @@ void readImage(cv::Mat& image, const std::string& inputImagePath);
 void sumImages(cv::Mat& outputSumImage, const cv::Mat& inputImage1, const cv::Mat& inputImage2);
 
 void low_treshold(cv::Mat& inputImage, cv::Mat& outputImage, unsigned char threshold);
-void tresholding(const cv::Mat& inputImage, cv::Mat& outputImage, unsigned int treshold);
+void thresholding(const cv::Mat& inputImage, cv::Mat& outputImage, unsigned int treshold);
+
+/**
+ * @brief Applies a thresholding to each pixel of the \param input_image
+ * based on the mean value of the neighborhood of the pixel
+ * @param input_image The input image
+ * @param output_image The thresholded output image
+ * @param C A constant to subtract from the computed mean value (this relaxes
+ * the threshold)
+ */
+void local_mean_thresholding(const cv::Mat& input_image, cv::Mat& output_image, unsigned int neighborhood_size = 5, unsigned char C = 0);
+void global_otsu_thresholding(const cv::Mat& input_image, cv::Mat& output_thresholded_image);

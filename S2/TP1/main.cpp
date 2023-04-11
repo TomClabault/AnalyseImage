@@ -19,7 +19,7 @@ int main(int argc, char** argv)
     unsigned int gaussianBlurKernelSize;
     float gaussianBlurSigma;
 
-    cv::Mat inputImage, inputImagePreprocessed, outputKirsch, outputCanny, outputBinarized, outputDerivX, outputDerivY;
+    cv::Mat input_image, inputImagePreprocessed, outputKirsch, outputCanny, outputBinarized, outputDerivX, outputDerivY;
 
     if (argc < 7)
     {
@@ -28,22 +28,21 @@ int main(int argc, char** argv)
         return -1;
     }
 
-    readImage(inputImage, argv[1]);
+    readImage(input_image, argv[1]);
     kernelType = std::string(argv[2]);
     threshold = atoi(argv[3]);
     preprocessBlur = std::string(argv[4]) != "false" && std::string(argv[4]) != "False";
 
-
-    cv::imshow("Input image", inputImage);
+    cv::imshow("Input image", input_image);
     if (preprocessBlur)
     {
         gaussianBlurKernelSize = atoi(argv[5]);
         gaussianBlurSigma = atof(argv[6]);
 
-        gaussianBlur(inputImage, inputImagePreprocessed, gaussianBlurKernelSize, gaussianBlurSigma);
+        gaussianBlur(input_image, inputImagePreprocessed, gaussianBlurKernelSize, gaussianBlurSigma);
     }
     else
-        inputImagePreprocessed = inputImage;
+        inputImagePreprocessed = input_image;
 
     if (kernelType == "Kirsch" || kernelType == "kirsch")
         kirshFilter(inputImagePreprocessed, outputKirsch);
@@ -99,23 +98,29 @@ int main(int argc, char** argv)
     else if ((kernelType == "Sobel" || kernelType == "sobel") || (kernelType == "Prewitt" || kernelType == "prewitt"))
     {
         cv::Mat outputDerivXU8Norm, outputDerivYU8Norm, outputDerivXThresh, outputDerivYThresh;
-        cv::Mat gradient_magnitude, gradient_direction, gradient_composite;
+        cv::Mat gradient_magnitude, gradient_magnitude_thresholded, gradient_magnitude_thresholded_t, gradient_magnitude_thresholded_o, gradient_direction, gradient_composite;
 
         gradientMagnitudeNormalized(outputDerivX, outputDerivY, gradient_magnitude);
         gradientDirection(outputDerivX, outputDerivY, gradient_direction);
         multiply_rgb_by_grayscale(gradient_direction, gradient_magnitude, gradient_composite);
-        binarize(gradient_magnitude, outputBinarized);
+        local_mean_thresholding(inputImagePreprocessed, gradient_magnitude_thresholded, 5, 2);
+        global_otsu_thresholding(inputImagePreprocessed, gradient_magnitude_thresholded_o);
+        thresholding(inputImagePreprocessed, gradient_magnitude_thresholded_t, 127);
+        binarize(gradient_magnitude_thresholded, outputBinarized);
 
         normalize_grayscale_s16_to_u8(outputDerivX, outputDerivXU8Norm);
         normalize_grayscale_s16_to_u8(outputDerivY, outputDerivYU8Norm);
 
-        cv::imshow("X", outputDerivXU8Norm);
-        cv::imshow("Y", outputDerivYU8Norm);
-        cv::imshow("gradientMagnitude/edge image", gradient_magnitude);
-        cv::imshow("edge image binarized", outputBinarized);
-        cv::imshow("gradientDirection", gradient_direction);
-        cv::imwrite("gradient_direction.png", gradient_direction);//TODO remove
-        cv::imshow("gradientDirection*Magnitude", gradient_composite);
+//        cv::imshow("X", outputDerivXU8Norm);
+//        cv::imshow("Y", outputDerivYU8Norm);
+//        cv::imshow("gradientMagnitude/edge image", gradient_magnitude);
+        cv::imshow("meanThreshold", gradient_magnitude_thresholded);
+        cv::imshow("otsuThreshold", gradient_magnitude_thresholded_o);
+        cv::imshow("threshold", gradient_magnitude_thresholded_t);
+        cv::imshow("gradientMagnitudeNormalized", gradient_magnitude);
+//        cv::imshow("edge image binarized", outputBinarized);
+//        cv::imshow("gradientDirection", gradient_direction);
+//        cv::imshow("gradientDirection*Magnitude", gradient_composite);
     }
 
     cv::Mat hough_space, outputLines;
