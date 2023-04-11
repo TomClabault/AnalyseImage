@@ -17,3 +17,7 @@ build/
 112MpxImg.jpg
 99MpxImg.jpg
 8k.png
+
+#Dossiers de build Qt
+build-TP1-Desktop_Qt_6_3_2_MSVC2019_64bit-Debug/
+build-TP1-Desktop_Qt_6_3_2_MSVC2019_64bit-Release/

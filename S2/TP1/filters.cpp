@@ -305,12 +305,12 @@ void angleMatrix(const cv::Mat& derivX, const cv::Mat& derivY, cv::Mat& angle_ma
     {
         for (int j = 0; j < derivX.cols; j++)
         {
-            unsigned char y, x;
-            x = derivX.at<unsigned char>(i, j);
-            y = derivY.at<unsigned char>(i, j);
+            short int y, x;
+            x = derivX.at<short int>(i, j);
+            y = derivY.at<short int>(i, j);
 
             //Angle between 0 and 180 degrees
-            angle_matrix.at<unsigned char>(i, j) = (std::atan2(y, x) + M_PI) / 2 * 180;
+            angle_matrix.at<unsigned char>(i, j) = (std::atan2(y, x) + M_PI) / 2 / M_PI * 180;
         }
     }
 }
@@ -415,6 +415,17 @@ void normalize_grayscale_u16_to_u8(const cv::Mat& u16_image, cv::Mat& u8_image_n
             u8_image_normalized.at<unsigned char>(i, j) = u16_image.at<unsigned short int>(i, j) / max_val * 255;
         }
     }
+}
+
+void normalize_grayscale_s16_to_u8(const cv::Mat& input_s16, cv::Mat& output_u8_normalized)
+{
+    cv::Mat input_u8(input_s16.rows, input_s16.cols, CV_8U);
+
+    for (int i = 0; i < input_s16.rows; i++)
+        for (int j = 0; j < input_s16.cols; j++)
+            input_u8.at<unsigned char>(i, j) = (float)std::abs(input_s16.at<short int>(i, j));
+
+    normalize_grayscale_image(input_u8, output_u8_normalized);
 }
 
 void print_kernel(float** kernel, unsigned int kernel_size)

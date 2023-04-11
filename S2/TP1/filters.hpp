@@ -28,6 +28,7 @@ void houghTransform(const cv::Mat& binarized_edge_image, int nb_theta, int nb_rh
 void multiply_rgb_by_grayscale(const cv::Mat& input_rgb, const cv::Mat& input_grayscale, cv::Mat& output_image);
 
 void normalize_grayscale_image(const cv::Mat& input_image, cv::Mat& output_image);
+void normalize_grayscale_s16_to_u8(const cv::Mat& input_s16, cv::Mat& output_u8_normalized);
 void normalize_grayscale_u16_to_u8(const cv::Mat& u16_image, cv::Mat& u8_image_normalized);
 
 void print_kernel(float** kernel, unsigned int kernel_size);
