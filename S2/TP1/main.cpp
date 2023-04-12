@@ -1,4 +1,5 @@
 #include "filters.hpp"
+#include "settings.hpp"
 
 #include <iostream>
 #include <fstream>
@@ -8,69 +9,53 @@
 #include <opencv2/highgui.hpp>
 #include <opencv2/imgproc.hpp>
 
+
+
 int main(int argc, char** argv)
 {
-    std::string kernelType;
-    std::string inputImagePath;
+    cv::Mat inputImagePreprocessed, outputKirsch, outputCanny, outputBinarized, outputDerivX, outputDerivY, gradient, gradientThresholded;
 
-    unsigned int threshold;
-
-    bool preprocessBlur;
-    unsigned int gaussianBlurKernelSize;
-    float gaussianBlurSigma;
-
-    cv::Mat input_image, inputImagePreprocessed, outputKirsch, outputCanny, outputBinarized, outputDerivX, outputDerivY;
-
-    if (argc < 7)
+    if (argc < 2)
     {
-        std::cout << "Usage: ./main <imageFile> <kernelType> <treshold> <preprocessBlur> <gaussianKernelSize> <gaussianKernelSigma>\n\n" << "<kernelType> can be either of: {sobel, prewitt, kirsh} " << std::endl;
+        std::cout << "Usage: ./main <settings_file_path>" << std::endl;;
 
         return -1;
     }
 
-    readImage(input_image, argv[1]);
-    kernelType = std::string(argv[2]);
-    threshold = atoi(argv[3]);
-    preprocessBlur = std::string(argv[4]) != "false" && std::string(argv[4]) != "False";
+    const char* settings_file_path = argv[1];
 
-    cv::imshow("Input image", input_image);
-    if (preprocessBlur)
-    {
-        gaussianBlurKernelSize = atoi(argv[5]);
-        gaussianBlurSigma = atof(argv[6]);
+    Settings settings;
+    read_settings(settings_file_path, settings);
 
-        gaussianBlur(input_image, inputImagePreprocessed, gaussianBlurKernelSize, gaussianBlurSigma);
-    }
+    cv::imshow("Input image", settings.input_image);
+    if (settings.preprocess_blur)
+        gaussianBlur(settings.input_image, inputImagePreprocessed, settings.gaussian_kernel_size, settings.gaussian_kernel_sigma);
     else
-        inputImagePreprocessed = input_image;
+        inputImagePreprocessed = settings.input_image;
 
-    if (kernelType == "Kirsch" || kernelType == "kirsch")
-        kirshFilter(inputImagePreprocessed, outputKirsch);
-    else if (kernelType == "Canny" || kernelType == "canny")
+    if (settings.kernel_type == "Kirsch" || settings.kernel_type == "kirsch")
     {
-        if (argc < 9)//Missing low and high threshold on the command line
-        {
-            std::cout << "Missing low and high threshold for the double threshold step of the canny edge detection:\n";
-            std::cout << "Usage: ./main <imageFile> canny UNUSED <preprocessBlur> <gaussianKernelSize> <gaussianKernelSigma> <lowThresholdValue> <highThresholdValue>\n\n" << std::endl;
+        cv::Mat outputKirschNorm, outputKirschThresholded;
 
-            return -1;
-        }
+        kirshFilter(inputImagePreprocessed, outputKirsch);
+        normalize_grayscale_s16_to_u8(outputKirsch, outputKirschNorm);
 
-        unsigned char canny_low_threshold, canny_high_threshold;
+        threshold_u8_by_settings(settings, outputKirschNorm, outputKirschThresholded);
+        binarize(outputKirschThresholded, outputBinarized);
 
-        canny_low_threshold = atoi(argv[7]);
-        canny_high_threshold = atoi(argv[8]);
-
-        cannyEdgeDetection(inputImagePreprocessed, canny_low_threshold, canny_high_threshold, outputCanny);
+        cv::imshow("Normal Kirsch", outputKirschNorm);
+        cv::imshow("Binarized", outputBinarized);
     }
-    else if (kernelType == "Sobel" || kernelType == "sobel")
+    else if (settings.kernel_type == "Canny" || settings.kernel_type == "canny")
+    {
+        cannyEdgeDetection(inputImagePreprocessed, settings.canny_low_threshold, settings.canny_high_threshold, outputCanny);
+
+        binarize(outputCanny, outputBinarized);
+    }
+    else if (settings.kernel_type =="Sobel" || settings.kernel_type =="sobel")
         sobelFilter(inputImagePreprocessed, outputDerivX, outputDerivY);
-    else if (kernelType == "Prewitt" || kernelType == "prewitt")
+    else if (settings.kernel_type =="Prewitt" || settings.kernel_type =="prewitt")
         prewittFilter(inputImagePreprocessed, outputDerivX, outputDerivY);
-    else if (kernelType == "free2")//X and Y filters are given in files
-        ;
-    else if (kernelType == "free4")//4 "diagonal directions" filters are given in files
-        ;
     else
     {
         std::cout << "Kernel type not recognized\n";
@@ -78,56 +63,34 @@ int main(int argc, char** argv)
         return -1;
     }
 
-    cv::Mat gradient, gradientThresholded;
-
-
-    if (kernelType == "Kirsch" || kernelType == "kirsch")
-    {
-        cv::Mat outputKirschNorm;
-        normalize_grayscale_image(outputKirsch, outputKirschNorm);
-        binarize(outputKirschNorm, outputBinarized);
-
-        cv::imshow("Output", outputBinarized);
-    }
-    else if (kernelType == "Canny" || kernelType == "canny")
-    {
-        binarize(outputCanny, outputBinarized);
-
-        cv::imshow("Output", outputBinarized);
-    }
-    else if ((kernelType == "Sobel" || kernelType == "sobel") || (kernelType == "Prewitt" || kernelType == "prewitt"))
+    if ((settings.kernel_type == "Sobel" || settings.kernel_type == "sobel") || (settings.kernel_type == "Prewitt" || settings.kernel_type == "prewitt"))
     {
         cv::Mat outputDerivXU8Norm, outputDerivYU8Norm, outputDerivXThresh, outputDerivYThresh;
-        cv::Mat gradient_magnitude, gradient_magnitude_thresholded, gradient_magnitude_thresholded_t, gradient_magnitude_thresholded_o, gradient_direction, gradient_composite;
+        cv::Mat gradient_magnitude_normalized, gradient_magnitude_thresholded, gradient_direction, gradient_composite;
 
-        gradientMagnitudeNormalized(outputDerivX, outputDerivY, gradient_magnitude);
+        gradientMagnitudeNormalized(outputDerivX, outputDerivY, gradient_magnitude_normalized);
         gradientDirection(outputDerivX, outputDerivY, gradient_direction);
-        multiply_rgb_by_grayscale(gradient_direction, gradient_magnitude, gradient_composite);
-        local_mean_thresholding(inputImagePreprocessed, gradient_magnitude_thresholded, 5, 2);
-        global_otsu_thresholding(inputImagePreprocessed, gradient_magnitude_thresholded_o);
-        thresholding(inputImagePreprocessed, gradient_magnitude_thresholded_t, 127);
+        multiply_rgb_by_grayscale(gradient_direction, gradient_magnitude_normalized, gradient_composite);
+        threshold_u8_by_settings(settings, gradient_magnitude_normalized, gradient_magnitude_thresholded);
         binarize(gradient_magnitude_thresholded, outputBinarized);
 
         normalize_grayscale_s16_to_u8(outputDerivX, outputDerivXU8Norm);
         normalize_grayscale_s16_to_u8(outputDerivY, outputDerivYU8Norm);
 
-//        cv::imshow("X", outputDerivXU8Norm);
-//        cv::imshow("Y", outputDerivYU8Norm);
-//        cv::imshow("gradientMagnitude/edge image", gradient_magnitude);
-        cv::imshow("meanThreshold", gradient_magnitude_thresholded);
-        cv::imshow("otsuThreshold", gradient_magnitude_thresholded_o);
-        cv::imshow("threshold", gradient_magnitude_thresholded_t);
-        cv::imshow("gradientMagnitudeNormalized", gradient_magnitude);
-//        cv::imshow("edge image binarized", outputBinarized);
-//        cv::imshow("gradientDirection", gradient_direction);
-//        cv::imshow("gradientDirection*Magnitude", gradient_composite);
+        cv::imshow("X", outputDerivXU8Norm);
+        cv::imshow("Y", outputDerivYU8Norm);
+        cv::imshow("gradientMagnitude/edge image", gradient_magnitude_normalized);
+        cv::imshow("threshold", gradient_magnitude_thresholded);
+        cv::imshow("gradientMagnitudeNormalized", gradient_magnitude_normalized);
+        cv::imshow("gradientDirection", gradient_direction);
+        cv::imshow("gradientDirection*Magnitude", gradient_composite);
     }
 
     cv::Mat hough_space, outputLines;
     cv::imshow("Input Hough", outputBinarized);
 
     cv::Mat hough_space_norm;
-    houghTransform(outputBinarized, 180*4, 180*4, hough_space, outputLines);
+    houghTransform(outputBinarized, settings.hough_transform_nb_theta, settings.hough_transform_nb_rho, hough_space, outputLines);
     normalize_grayscale_u16_to_u8(hough_space, hough_space_norm);
 
     cv::imshow("Hough Space", hough_space_norm);

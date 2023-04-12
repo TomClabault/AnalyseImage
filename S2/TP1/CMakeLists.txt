@@ -17,8 +17,11 @@ endif()
 include_directories(inc)
 
 set(SRCS
-        main.cpp
-        filters.cpp
+    main.cpp
+    filters.cpp
+	filters.hpp
+	settings.cpp
+	settings.hpp
 )
 
 

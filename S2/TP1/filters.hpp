@@ -1,3 +1,6 @@
+#ifndef FILTERS_HPP
+#define FILTERS_HPP
+
 #include <opencv2/core.hpp>
 #include <opencv2/imgcodecs.hpp>
 #include <opencv2/highgui.hpp>
@@ -5,6 +8,8 @@
 
 #include <fstream>
 #include <iostream>
+
+#include "settings.hpp"
 
 #ifndef M_PI
 	#define M_PI 3.14159265358979323846
@@ -34,13 +39,11 @@ void normalize_grayscale_u16_to_u8(const cv::Mat& u16_image, cv::Mat& u8_image_n
 
 void print_kernel(float** kernel, unsigned int kernel_size);
 
-void readMask(unsigned int& maskSize, float*** kernel, std::string maskFilePath);
-void readImage(cv::Mat& image, const std::string& inputImagePath);
-
 void sumImages(cv::Mat& outputSumImage, const cv::Mat& inputImage1, const cv::Mat& inputImage2);
 
-void low_treshold(cv::Mat& inputImage, cv::Mat& outputImage, unsigned char threshold);
+void low_treshold(const cv::Mat& inputImage, cv::Mat& outputImage, unsigned char threshold);
 void thresholding(const cv::Mat& inputImage, cv::Mat& outputImage, unsigned int treshold);
+void threshold_u8_by_settings(const Settings& settings, const cv::Mat& input, cv::Mat& output);
 
 /**
  * @brief Applies a thresholding to each pixel of the \param input_image
@@ -52,3 +55,5 @@ void thresholding(const cv::Mat& inputImage, cv::Mat& outputImage, unsigned int 
  */
 void local_mean_thresholding(const cv::Mat& input_image, cv::Mat& output_image, unsigned int neighborhood_size = 5, unsigned char C = 0);
 void global_otsu_thresholding(const cv::Mat& input_image, cv::Mat& output_thresholded_image);
+
+#endif

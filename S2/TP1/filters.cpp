@@ -1,4 +1,5 @@
 #include "filters.hpp"
+#include "settings.hpp"
 
 #include <iostream>
 
@@ -26,17 +27,6 @@ void readMask(unsigned int& maskSize, float*** kernel, std::string maskFilePath)
             (*kernel)[i][j] = atof(number);
         }
     }
-}
-
-void readImage(cv::Mat& image, const std::string& inputImagePath)
-{
-    cv::Mat imageRGB = cv::imread(inputImagePath, cv::IMREAD_COLOR);
-    if (imageRGB.empty()) {
-        std::cout << "Impossible d'ouvrir l'image...\n";
-        std::exit(0);
-    }
-
-    cv::cvtColor(imageRGB, image, cv::COLOR_RGB2GRAY);
 }
 
 void convolution(const cv::Mat& inputImage, cv::Mat& outputImage, float** kernel, int kernel_size)
@@ -98,9 +88,6 @@ void convolution(const cv::Mat& inputImage, cv::Mat& outputImage, const float ke
     for (int y_img = 0; y_img < inputImage.rows; y_img++) {
         for (int x_img = 0; x_img < inputImage.cols; x_img++) {
             unsigned char current_pixel_value = inputImage.at<unsigned char>(y_img, x_img);
-
-            if (x_img == 157 && y_img == 58)
-                std::cout << "pixel_value: " << (int)inputImage.at<unsigned char>(y_img, x_img) << std::endl;
 
             float new_pixel_value = 0;
             for (int y_kernel = 0; y_kernel < N; y_kernel++) {
@@ -315,6 +302,28 @@ void angleMatrix(const cv::Mat& derivX, const cv::Mat& derivY, cv::Mat& angle_ma
     }
 }
 
+void threshold_u8_by_settings(const Settings& settings, const cv::Mat& input, cv::Mat& output)
+{
+    if (settings.threshold_manual != -1)
+        low_treshold(input, output, settings.threshold_manual);
+    else if (settings.threshold_method == "adaptativeLocalMean")
+    {
+        if (settings.thresh_adapt_mean_local_neighborhood_size != -1)
+        {
+            if (settings.thresh_adapt_mean_local_constant != -INFINITY)
+                local_mean_thresholding(input, output, settings.thresh_adapt_mean_local_neighborhood_size, settings.thresh_adapt_mean_local_constant);
+            else
+                local_mean_thresholding(input, output, settings.thresh_adapt_mean_local_neighborhood_size);
+        }
+        else
+            local_mean_thresholding(input, output);
+    }
+    else if (settings.threshold_method == "otsuGlobal")
+        global_otsu_thresholding(input, output);
+    else if (settings.threshold_method == "None")
+        output = input;
+}
+
 void thresholding(const cv::Mat& inputImage, cv::Mat& outputImage, unsigned int treshold)
 {
     outputImage = cv::Mat(inputImage.rows, inputImage.cols, inputImage.type());
@@ -430,7 +439,7 @@ void global_otsu_thresholding(const cv::Mat& input_image, cv::Mat& output_thresh
     }
 }
 
-void low_treshold(cv::Mat& input_image, cv::Mat& output_image, unsigned char threshold)
+void low_treshold(const cv::Mat& input_image, cv::Mat& output_image, unsigned char threshold)
 {
     output_image = cv::Mat(input_image.rows, input_image.cols, input_image.type());
 
@@ -759,7 +768,7 @@ void kirshFilter(const cv::Mat& inputImage, cv::Mat& outputImage)
     cv::Mat outputDerivNE = cv::Mat(inputImage.rows, inputImage.cols, CV_16S);
     cv::Mat outputDerivE= cv::Mat(inputImage.rows, inputImage.cols, CV_16S);
     cv::Mat outputDerivSE = cv::Mat(inputImage.rows, inputImage.cols, CV_16S);
-    outputImage = cv::Mat(inputImage.rows, inputImage.cols, CV_8U);
+    outputImage = cv::Mat(inputImage.rows, inputImage.cols, CV_16S);
 
     convolution<3, short int>(inputImage, outputDerivN, kirschN);
     convolution<3, short int>(inputImage, outputDerivNE, kirschNE);
