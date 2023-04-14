@@ -90,7 +90,7 @@ int main(int argc, char** argv)
     cv::imshow("Input Hough", outputBinarized);
 
     cv::Mat hough_space_norm;
-    houghTransform(outputBinarized, settings.hough_transform_nb_theta, settings.hough_transform_nb_rho, hough_space, outputLines);
+    hough_transform(outputBinarized, settings.hough_transform_nb_theta, settings.hough_transform_nb_rho, settings.hough_transform_threshold, hough_space, outputLines);
     normalize_grayscale_u16_to_u8(hough_space, hough_space_norm);
 
     cv::imshow("Hough Space", hough_space_norm);

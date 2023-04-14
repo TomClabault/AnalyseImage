@@ -29,7 +29,7 @@ void gaussianBlur(const cv::Mat& inputImage, cv::Mat& outputBlurred, unsigned in
 void gradientDirection(const cv::Mat& derivX, const cv::Mat& derivY, cv::Mat& gradientDir);
 void gradientMagnitudeNormalized(const cv::Mat& derivX, const cv::Mat& derivY, cv::Mat& gradientMagnitude);
 
-void houghTransform(const cv::Mat& binarized_edge_image, int nb_theta, int nb_rho, cv::Mat& hough_space, cv::Mat& output_lines);
+void hough_transform(const cv::Mat& binarized_edge_image, int nb_theta, int nb_rho, float detect_threshold, cv::Mat& hough_space, cv::Mat& output_lines);
 
 void multiply_rgb_by_grayscale(const cv::Mat& input_rgb, const cv::Mat& input_grayscale, cv::Mat& output_image);
 

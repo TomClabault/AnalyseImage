@@ -1,8 +1,8 @@
 #imageFile=../TP1/lena_color.png
 #imageFile=../TP1/bw.png
-imageFile=../TP1/sudoku.jpg
+#imageFile=../TP1/sudoku.jpg
 #imageFile=../TP1/testMathis.png
-#imageFile=../TP1/cube.jpg
+imageFile=../TP1/cube.jpg
 
 #kernelType=sobel
 kernelType=prewitt
@@ -26,3 +26,4 @@ gaussianKernelSigma=1.4
 
 houghTransformNbRho=384
 houghTransformNbTheta=384
+houghTransformThreshold=0.8

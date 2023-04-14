@@ -671,13 +671,22 @@ void cannyEdgeDetection(const cv::Mat& inputImagePreprocessed, unsigned char low
     hysteresis(double_thresholded, outputCanny);
 }
 
-void houghTransform(const cv::Mat& binarized_edge_image, int nb_theta, int nb_rho, cv::Mat& hough_space, cv::Mat& output_lines)
+void hough_transform(const cv::Mat& binarized_edge_image, int nb_theta, int nb_rho, float detect_threshold, cv::Mat& hough_space, cv::Mat& output_lines)
 {
     float img_hypot = std::hypot(binarized_edge_image.rows, binarized_edge_image.cols);
     float theta_step = 180.0f / nb_theta;
 
     hough_space = cv::Mat(nb_theta, nb_rho, CV_16U);
     hough_space.setTo(cv::Scalar(0, 0, 0));
+
+    //These vectors will contain, for each pair of rho and theta (for each possible line)
+    //the point the closest to the Y axis (the left of the image, the minimum point)
+    //and the point the closest to the right of the image (the maximum point)
+    //that contributed to this pair of rho and theta. This will essentially delimit
+    //the lines found by the Hough Transform
+    //We're initializing the points to an impossible value
+    std::vector<cv::Point> lines_min(nb_theta * nb_rho, cv::Point(nb_rho * 2, 0));
+    std::vector<cv::Point> lines_max(nb_theta * nb_rho, cv::Point(-1, 0));
 
     for (int i = 0; i < binarized_edge_image.rows; i++)
     {
@@ -694,6 +703,12 @@ void houghTransform(const cv::Mat& binarized_edge_image, int nb_theta, int nb_rh
                     int rho_index = (rho + img_hypot) / img_hypot / 2 * nb_rho;
 
                     hough_space.at<unsigned short int>(theta_index, rho_index)++;
+
+                    if (j < lines_min.at(theta_index * nb_rho + rho_index).x)
+                        lines_min.at(theta_index * nb_rho + rho_index) = cv::Point(j, i);
+
+                    if (j > lines_max.at(theta_index * nb_rho + rho_index).x)
+                        lines_max.at(theta_index * nb_rho + rho_index) = cv::Point(j, i);
                 }
             }
         }
@@ -702,8 +717,9 @@ void houghTransform(const cv::Mat& binarized_edge_image, int nb_theta, int nb_rh
     double minValue, maxValue;
     cv::minMaxLoc(hough_space, &minValue, &maxValue);
 
-    float threshold = maxValue * 0.5;
+    float threshold = maxValue * detect_threshold;
     std::vector<float> rhos, thetas;//Rhos and thetas of the lines detected in the image
+    //that satisfy a given threshold
 
     for (int i = 0; i < hough_space.rows; i++)
     {
@@ -724,13 +740,17 @@ void houghTransform(const cv::Mat& binarized_edge_image, int nb_theta, int nb_rh
         float rho = rhos.at(i);
         float theta = thetas.at(i);
 
-        cv::Point a(0, rho / std::sin(theta / 180 * M_PI));
-        cv::Point b(binarized_edge_image.cols - 1, (rho - (binarized_edge_image.cols - 1) * std::cos(theta / 180 * M_PI))/ std::sin(theta / 180 * M_PI));
+        int rho_index = (rho + img_hypot) / 2 / img_hypot * nb_rho;
+        int theta_index = theta / 180 * nb_theta;
 
-        if (i == rhos.size() - 1)
-            cv::line(output_lines, a, b, cv::Scalar(127, 0, 0), 1);
-        else
-            cv::line(output_lines, a, b, cv::Scalar(255, 255, 255), 1, cv::LINE_AA);
+        cv::Point a = lines_min.at(theta_index * nb_rho + rho_index);
+        cv::Point b = lines_max.at(theta_index * nb_rho + rho_index);
+
+        //Non delimited lines below
+        //cv::Point a(0, rho / std::sin(theta / 180 * M_PI));
+        //cv::Point b(binarized_edge_image.cols - 1, (rho - (binarized_edge_image.cols - 1) * std::cos(theta / 180 * M_PI))/ std::sin(theta / 180 * M_PI));
+
+        cv::line(output_lines, a, b, cv::Scalar(255, 255, 255), 1, cv::LINE_AA);
     }
 }
 

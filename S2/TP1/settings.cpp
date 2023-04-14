@@ -93,5 +93,7 @@ void read_settings(const char* filepath, Settings& settings)
             settings.hough_transform_nb_rho = std::atoi(object.c_str());
         else if (instruction == "houghTransformNbTheta")
             settings.hough_transform_nb_theta = std::atoi(object.c_str());
+        else if (instruction == "houghTransformThreshold")
+            settings.hough_transform_threshold = std::atof(object.c_str());
     }
 }

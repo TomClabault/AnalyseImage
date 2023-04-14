@@ -22,6 +22,11 @@ struct Settings
     float gaussian_kernel_sigma;
 
     int hough_transform_nb_rho, hough_transform_nb_theta;
+    float hough_transform_threshold;//Threshold between 0 and 1 that will
+    //be used to determine whether a given line (rho/theta pair) will be kept
+    //for the final result or not. A line is accepted if it has received at least
+    //"threshold * max_vote" votes. max_vote being the maximum number of vote
+    //that any line received in the image
 };
 
 void read_image(const std::string& inputImagePath, cv::Mat& image);
