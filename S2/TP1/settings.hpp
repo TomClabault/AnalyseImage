@@ -11,6 +11,8 @@ struct Settings
 
     std::string threshold_method;
     int threshold_manual = -1;
+    int hysteresis_low_threshold;
+    int hysteresis_high_threshold;
 
     int thresh_adapt_mean_local_neighborhood_size = -1;
     float thresh_adapt_mean_local_constant = -INFINITY;

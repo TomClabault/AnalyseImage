@@ -79,6 +79,10 @@ void read_settings(const char* filepath, Settings& settings)
             settings.thresh_adapt_mean_local_neighborhood_size = std::atoi(object.c_str());
         else if (instruction == "thresholdAdaptativeLocalMeanConstant")
             settings.thresh_adapt_mean_local_constant = std::atof(object.c_str());
+        else if (instruction == "hysteresisLowThreshold")
+            settings.hysteresis_low_threshold = std::atoi(object.c_str());
+        else if (instruction == "hysteresisHighThreshold")
+            settings.hysteresis_high_threshold = std::atoi(object.c_str());
         else if (instruction == "preprocessBlur")
             settings.preprocess_blur = object != "False" && object != "false";
         else if (instruction == "gaussianKernelSize")

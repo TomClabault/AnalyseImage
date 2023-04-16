@@ -302,6 +302,9 @@ void angleMatrix(const cv::Mat& derivX, const cv::Mat& derivY, cv::Mat& angle_ma
     }
 }
 
+void double_threshold(const cv::Mat& non_maxi_suppressed, float low_threshold, float high_threshold, cv::Mat& double_thresholded);
+void hysteresis(const cv::Mat& double_tresholded, cv::Mat& output_hysteresis);
+
 void threshold_u8_by_settings(const Settings& settings, const cv::Mat& input, cv::Mat& output)
 {
     if (settings.threshold_manual != -1)
@@ -320,6 +323,12 @@ void threshold_u8_by_settings(const Settings& settings, const cv::Mat& input, cv
     }
     else if (settings.threshold_method == "otsuGlobal")
         global_otsu_thresholding(input, output);
+    else if (settings.threshold_method == "hysteresis")
+    {
+        cv::Mat double_thresholded = cv::Mat(input.rows, input.cols, CV_8U);
+        double_threshold(input, settings.hysteresis_low_threshold, settings.hysteresis_high_threshold, double_thresholded);
+        hysteresis(double_thresholded, output);
+    }
     else if (settings.threshold_method == "None")
         output = input;
 }
@@ -448,7 +457,7 @@ void low_treshold(const cv::Mat& input_image, cv::Mat& output_image, unsigned ch
         for (int j = 0; j < input_image.cols; j++)
         {
             unsigned char value = input_image.at<unsigned char>(i, j);
-            output_image.at<unsigned char>(i, j) = (value >= threshold ? value : 0);
+            output_image.at<unsigned char>(i, j) = (value >= threshold ? 255 : 0);
         }
     }
 }
