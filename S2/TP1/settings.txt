@@ -1,7 +1,7 @@
-#imageFile=../TP1/lena_color.png
+imageFile=../TP1/lena_color.png
 #imageFile=../TP1/bw.png
 #imageFile=../TP1/sudoku.jpg
-imageFile=../TP1/sudokunoise.png
+#imageFile=../TP1/sudokunoise.png
 #imageFile=../TP1/photograph.png
 #imageFile=../TP1/testMathis.png
 #imageFile=../TP1/cube.jpg

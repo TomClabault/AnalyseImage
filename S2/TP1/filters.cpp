@@ -53,13 +53,23 @@ void convolution(const cv::Mat& inputImage, cv::Mat& outputImage, float** kernel
 
                     unsigned char pixel_value;
 
-                    //Si on est en train de d�passer des bords de l'image
-                    if (y_pos < 0 || y_pos >= inputImage.rows || x_pos < 0 || x_pos >= inputImage.cols)
-                        //On va considerer que la valeur du pixel est la meme que celle du pixel courant
-                        pixel_value = current_pixel_value;
-                    else
-                        pixel_value = inputImage.at<unsigned char>(y_pos, x_pos);
+                    //Si on est en train de depasser des bords de l'image, on va considerer que le pixel
+                    //est le meme que celui qui est au bord de l'image mais quand meme dans l'image
+                    //--> pour une image de 10 pixels de large (de 0 a 9), si on essaye d'acceder au
+                    //pixel 10 ou 11 ou meme 12 (qui sont donc en dehors des limites de l'image),
+                    //on considerer que les valeurs de ces pixels (10, 11, 12) est la meme que celui du pixel
+                    //a la position horizontale 9.
+                    if (y_pos < 0 )
+                        y_pos = 0;
+                    else if (y_pos >= inputImage.rows)
+                        y_pos = inputImage.rows - 1;
 
+                    if (x_pos < 0)
+                        x_pos = 0;
+                    else if (x_pos >= inputImage.cols)
+                        x_pos = inputImage.cols - 1;
+
+                    pixel_value = inputImage.at<unsigned char>(y_pos, x_pos);
                     new_pixel_value += pixel_value * kernel[y_kernel][x_kernel];
                 }
             }
@@ -100,13 +110,23 @@ void convolution(const cv::Mat& inputImage, cv::Mat& outputImage, const float ke
 
                     T pixel_value;
 
-                    //Si on est en train de depasser des bords de l'image
-                    if (y_pos < 0 || y_pos >= inputImage.rows || x_pos < 0 || x_pos >= inputImage.cols)
-                        //On va considerer que la valeur du pixel est la meme que celle du pixel courant
-                        pixel_value = current_pixel_value;
-                    else
-                        pixel_value = inputImage.at<unsigned char>(y_pos, x_pos);
+                    //Si on est en train de depasser des bords de l'image, on va considerer que le pixel
+                    //est le meme que celui qui est au bord de l'image mais quand meme dans l'image
+                    //--> pour une image de 10 pixels de large (de 0 a 9), si on essaye d'acceder au
+                    //pixel 10 ou 11 ou meme 12 (qui sont donc en dehors des limites de l'image),
+                    //on considerer que les valeurs de ces pixels (10, 11, 12) est la meme que celui du pixel
+                    //a la position horizontale 9.
+                    if (y_pos < 0 )
+                        y_pos = 0;
+                    else if (y_pos >= inputImage.rows)
+                        y_pos = inputImage.rows - 1;
 
+                    if (x_pos < 0)
+                        x_pos = 0;
+                    else if (x_pos >= inputImage.cols)
+                        x_pos = inputImage.cols - 1;
+
+                    pixel_value = inputImage.at<unsigned char>(y_pos, x_pos);
                     new_pixel_value += pixel_value * kernel[y_kernel][x_kernel];
                 }
             }
@@ -183,15 +203,23 @@ void gaussianBlur(const cv::Mat& inputImage, cv::Mat& outputImage, unsigned int 
 
                     unsigned char pixel_value;
 
-                    //Si on est en train de d�passer des bords de l'image
-                    if (y_pos < 0 || y_pos >= rows || x_pos < 0 || x_pos >= cols) {
-                        //On va consid�rer que la valeur du pixel est la m�me que celle du pixel courant
-                        pixel_value = current_pixel_value;
-                    }
-                    else {
-                        pixel_value = inputImage.at<unsigned char>(y_pos, x_pos);
-                    }
+                    //Si on est en train de depasser des bords de l'image, on va considerer que le pixel
+                    //est le meme que celui qui est au bord de l'image mais quand meme dans l'image
+                    //--> pour une image de 10 pixels de large (de 0 a 9), si on essaye d'acceder au
+                    //pixel 10 ou 11 ou meme 12 (qui sont donc en dehors des limites de l'image),
+                    //on considerer que les valeurs de ces pixels (10, 11, 12) est la meme que celui du pixel
+                    //a la position horizontale 9.
+                    if (y_pos < 0 )
+                        y_pos = 0;
+                    else if (y_pos >= inputImage.rows)
+                        y_pos = inputImage.rows - 1;
 
+                    if (x_pos < 0)
+                        x_pos = 0;
+                    else if (x_pos >= inputImage.cols)
+                        x_pos = inputImage.cols - 1;
+
+                    pixel_value = inputImage.at<unsigned char>(y_pos, x_pos);
                     new_pixel_value += pixel_value * kernel[y_kernel][x_kernel];
                 }
             }
