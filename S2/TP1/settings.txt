@@ -1,13 +1,16 @@
-imageFile=../TP1/lena_color.png
+#imageFile=../TP1/lena_color.png
 #imageFile=../TP1/bw.png
 #imageFile=../TP1/sudoku.jpg
 #imageFile=../TP1/sudokunoise.png
 #imageFile=../TP1/photograph.png
 #imageFile=../TP1/testMathis.png
+#imageFile=../TP1/cat_mathis.png
 #imageFile=../TP1/cube.jpg
+#imageFile=../TP1/vertLine.png
+imageFile=../TP1/vertLine.jpg
 
-#kernelType=sobel
-kernelType=prewitt
+kernelType=sobel
+#kernelType=prewitt
 #kernelType=kirsch
 
 #kernelType=canny
@@ -31,4 +34,4 @@ gaussianKernelSigma=1.4
 
 houghTransformNbRho=384
 houghTransformNbTheta=384
-houghTransformThreshold=0.75
+houghTransformThreshold=0.5

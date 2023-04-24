@@ -741,11 +741,31 @@ void hough_transform(const cv::Mat& binarized_edge_image, int nb_theta, int nb_r
 
                     hough_space.at<unsigned short int>(theta_index, rho_index)++;
 
-                    if (j < lines_min.at(theta_index * nb_rho + rho_index).x)
+                    //If we found a point on the same line but that has an x coordinate less than
+                    //the minimum we had so far, this means that we found a new point on the point
+                    //that is closer to the left edge of the image. We also need this point to be
+                    //contiguous with the current line (we suppose two point are contiguous if their
+                    //distance is less than or equal to 2. 1 would have been the logical choice but
+                    //this is a little bit too restrictive)
+                    float min_x = lines_min.at(theta_index * nb_rho + rho_index).x, max_x = lines_max.at(theta_index * nb_rho + rho_index).x;
+                    float min_y = lines_min.at(theta_index * nb_rho + rho_index).y, max_y = lines_max.at(theta_index * nb_rho + rho_index).y;
+
+
+                    if (((j < min_x || (i < min_y && (std::abs(theta - 0) <= 5 || std::abs(theta - 180) <= 5))) && cv::norm(cv::Point(min_x, min_y) - cv::Point(j, i)) <= 5) || min_x == nb_rho * 2)
                         lines_min.at(theta_index * nb_rho + rho_index) = cv::Point(j, i);
 
-                    if (j > lines_max.at(theta_index * nb_rho + rho_index).x)
+//                    if ((j < min_x
+//                         || (i < min_y && theta <= 5))
+//                        && (cv::norm(lines_min.at(theta_index * nb_rho + rho_index) - cv::Point(j, i)) <= 10) || min_x == nb_rho * 2)
+//                        lines_min.at(theta_index * nb_rho + rho_index) = cv::Point(j, i);
+
+                    //Same here but we're extending the line to the right edge of the image
+                    if (((j > max_x || (i > max_y && (std::abs(theta - 0) <= 5 || std::abs(theta - 180) <= 5))) && cv::norm(cv::Point(max_x, max_y) - cv::Point(j, i)) <= 5) || max_x == -1)
                         lines_max.at(theta_index * nb_rho + rho_index) = cv::Point(j, i);
+//                    if ((j > max_x
+//                         || (i > max_y && theta <= 5))
+//                         && (cv::norm(lines_max.at(theta_index * nb_rho + rho_index) - cv::Point(j, i)) <= 10) || max_x == -1)
+//                        lines_max.at(theta_index * nb_rho + rho_index) = cv::Point(j, i);
                 }
             }
         }
